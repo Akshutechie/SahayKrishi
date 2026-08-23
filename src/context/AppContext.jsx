@@ -50,6 +50,7 @@ export function AppProvider({ children }) {
           if (results[2].data) setListings(results[2].data);
           if (results[3].data) setBids(results[3].data);
           if (results[4].data) setFpoUsers(results[4].data);
+          if (results[5]?.data) setInventory(results[5].data);
 
       } catch (error) {
         console.error("Supabase Connection Error:", error);
