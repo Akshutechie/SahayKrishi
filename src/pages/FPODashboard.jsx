@@ -25,7 +25,7 @@ export default function FPODashboard() {
   const [isDemandModalOpen, setIsDemandModalOpen] = useState(false);
   
   // Form State
-  const [newBulk, setNewBulk] = useState({ crop: '', quantity: '', contributors: '', price: '' });
+  const [newBulk, setNewBulk] = useState({ crop: '', quantity: '', contributorIds: [], price: '' });
   const [newDemand, setNewDemand] = useState({ buyerId: '', crop: '', quantity: '', price: '' });
   const [newFarmer, setNewFarmer] = useState({ name: '', location: '', phone: '' });
   const [newBuyer, setNewBuyer] = useState({ name: '', type: 'APEDA Exporter', location: '' });
@@ -62,18 +62,20 @@ export default function FPODashboard() {
   };
   const handleCreateBulkListing = (e) => {
     e.preventDefault();
-    if (!newBulk.crop || !newBulk.quantity || !newBulk.contributors || !newBulk.price) return;
+    if (!newBulk.crop || !newBulk.quantity || newBulk.contributorIds.length === 0 || !newBulk.price) return;
     
     addBulkListing({
       id: `BLK00${Math.random().toString(36).substr(2, 6)}`,
       crop: newBulk.crop,
       quantity: newBulk.quantity,
-      contributors: newBulk.contributors,
+      contributors: newBulk.contributorIds.length,
+      contributor_ids: newBulk.contributorIds.join(','),
+      original_quantity: newBulk.quantity,
       price: newBulk.price,
       status: 'Awaiting Bids'
     });
     
-    setNewBulk({ crop: '', quantity: '', contributors: '', price: '' });
+    setNewBulk({ crop: '', quantity: '', contributorIds: [], price: '' });
     setIsBulkModalOpen(false);
     alert('Bulk listing successfully created and posted to APEDA Exporters!');
   };
@@ -524,8 +526,22 @@ export default function FPODashboard() {
                 <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newBulk.quantity} onChange={e => setNewBulk({...newBulk, quantity: e.target.value})} required />
               </div>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Number of Contributing Farmers</label>
-                <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newBulk.contributors} onChange={e => setNewBulk({...newBulk, contributors: e.target.value})} required />
+                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Select Contributing Farmers</label>
+                <div style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.5rem' }}>
+                  {farmers.map(farmer => (
+                    <label key={farmer.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={newBulk.contributorIds.includes(farmer.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) setNewBulk({...newBulk, contributorIds: [...newBulk.contributorIds, farmer.id]});
+                          else setNewBulk({...newBulk, contributorIds: newBulk.contributorIds.filter(id => id !== farmer.id)});
+                        }}
+                      />
+                      {farmer.name} ({farmer.location})
+                    </label>
+                  ))}
+                </div>
               </div>
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Asking Price (₹/kg)</label>

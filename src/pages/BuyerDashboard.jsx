@@ -25,7 +25,7 @@ export default function BuyerDashboard() {
   // Form/Selection State
   const [newDemand, setNewDemand] = useState({ crop: '', quantity: '', targetPrice: '' });
   const [selectedListing, setSelectedListing] = useState(null);
-  const [bidOffer, setBidOffer] = useState({ price: '' });
+  const [bidOffer, setBidOffer] = useState({ price: '', quantity: '' });
 
   const filteredListings = listings.filter(l => 
     l.status === 'Active' && (
@@ -84,29 +84,35 @@ export default function BuyerDashboard() {
 
   const handleOpenBid = (listing) => {
     setSelectedListing(listing);
-    setBidOffer({ price: listing.price }); // default to their asking price
+    setBidOffer({ price: listing.price, quantity: listing.quantity }); // default to asking price and max quantity
     setIsBidModalOpen(true);
   };
 
   const handleSendBid = (e) => {
     e.preventDefault();
-    if (!selectedListing || !bidOffer.price) return;
+    if (!selectedListing || !bidOffer.price || !bidOffer.quantity) return;
+
+    if (Number(bidOffer.quantity) > Number(selectedListing.quantity)) {
+        alert(`You cannot bid for more than the available ${selectedListing.quantity}kg!`);
+        return;
+    }
 
     addBid({
       id: `B00${Math.random().toString(36).substr(2, 6)}`,
       buyer: currentUser.name,
       crop: selectedListing.crop,
-      quantity: selectedListing.quantity,
+      quantity: bidOffer.quantity,
       bidPrice: bidOffer.price,
       status: 'Pending',
       farmerName: selectedListing.farmerName,
-      farmerId: selectedListing.farmerId
+      farmerId: selectedListing.farmerId,
+      listingId: selectedListing.id
     });
 
     setIsBidModalOpen(false);
     setSelectedListing(null);
-    setBidOffer({ price: '' });
-    alert(`Bid of ₹${bidOffer.price}/kg sent to ${selectedListing.farmerName}!`);
+    setBidOffer({ price: '', quantity: '' });
+    alert(`Bid of ₹${bidOffer.price}/kg for ${bidOffer.quantity}kg sent to ${selectedListing.farmerName}!`);
   };
 
   if (!currentUser || currentUser.role !== 'buyer') return null;
@@ -405,20 +411,33 @@ export default function BuyerDashboard() {
               Their asking price is <strong>₹{selectedListing.price}/kg</strong>.
             </p>
             <form onSubmit={handleSendBid}>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Your Bid Price (₹/kg)</label>
-                <input 
-                  type="number" 
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} 
-                  value={bidOffer.price} 
-                  onChange={e => setBidOffer({ price: e.target.value })} 
-                  required 
-                />
+                            <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+                <div style={{ marginBottom: '0.5rem', width: '100%' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>Quantity to Buy (Max {selectedListing.quantity}kg)</label>
+                  <input 
+                    type="number" 
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} 
+                    value={bidOffer.quantity} 
+                    onChange={e => setBidOffer({ ...bidOffer, quantity: e.target.value })} 
+                    max={selectedListing.quantity}
+                    required 
+                  />
+                </div>
+                <div style={{ marginBottom: '1.5rem', width: '100%' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>Your Bid Price (₹/kg)</label>
+                  <input 
+                    type="number" 
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} 
+                    value={bidOffer.price} 
+                    onChange={e => setBidOffer({ ...bidOffer, price: e.target.value })} 
+                    required 
+                  />
+                </div>
               </div>
               
               <div className="stack-mobile" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', fontSize: '1.2rem', color: 'var(--buyer-dark)' }}>
                 <span><strong>Total Contract Value:</strong></span>
-                <span><strong>₹{((Number(bidOffer.price) || 0) * selectedListing.quantity).toLocaleString()}</strong></span>
+                <span><strong>₹{((Number(bidOffer.price) || 0) * (Number(bidOffer.quantity) || 0)).toLocaleString()}</strong></span>
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
