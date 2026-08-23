@@ -289,8 +289,14 @@ export function AppProvider({ children }) {
       }
     } else if (newStatus === 'Rejected') {
       // If a Direct Sale is rejected, refund the reserved inventory
+      let invId = null;
       if (targetBid && targetBid.listingId && targetBid.listingId.startsWith('DIRECT_INV:')) {
-          const invId = targetBid.listingId.split('DIRECT_INV:')[1];
+          invId = targetBid.listingId.split('DIRECT_INV:')[1];
+      } else if (targetBid && !targetBid.listingId && targetBid.inventoryId) {
+          invId = targetBid.inventoryId;
+      }
+
+      if (invId) {
           const invItem = inventory.find(i => i.id === invId);
           if (invItem) {
               const newQty = Number(invItem.quantity) + Number(targetBid.quantity);
