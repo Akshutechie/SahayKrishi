@@ -927,6 +927,25 @@ export default function FarmerDashboard() {
             <p style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>
               Propose a sale of your <strong>{selectedExporter.crop}</strong> to <strong>{selectedExporter.name}</strong> at the APEDA target price of <strong>₹{selectedExporter.price}/kg</strong>.
             </p>
+            
+            <div style={{ marginBottom: '1rem', textAlign: 'left' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Select Inventory Batch:</label>
+              <select 
+                value={sellInventoryId} 
+                onChange={(e) => setSellInventoryId(e.target.value)}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                required
+              >
+                <option value="" disabled>Select from warehouse...</option>
+                {myInventory.filter(i => i.crop.toLowerCase() === selectedExporter.crop.toLowerCase() && i.quantity > 0).map(inv => (
+                  <option key={inv.id} value={inv.id}>{inv.crop} ({inv.grade}) - {inv.quantity}kg available</option>
+                ))}
+              </select>
+              {myInventory.filter(i => i.crop.toLowerCase() === selectedExporter.crop.toLowerCase() && i.quantity > 0).length === 0 && (
+                <p style={{ color: '#ef4444', fontSize: '0.9rem', marginTop: '0.5rem' }}>You do not have any {selectedExporter.crop} in your warehouse.</p>
+              )}
+            </div>
+
             <div style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Quantity to Sell (kg):</label>
               <input 
