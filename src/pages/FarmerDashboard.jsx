@@ -9,7 +9,37 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 export default function FarmerDashboard() {
   const navigate = useNavigate();
-  const { inventory, addInventory, removeInventory, listings, bids, buyers, addListing, addBid, updateBidStatus, removeBuyerDemand, removeListing, currentUser, logout, updateFarmerCrops } = useAppContext();
+  const { inventory, addInventory, removeInventory, listings, bids, buyers, addListing, addBid, updateBidStatus, removeBuyerDemand, removeListing, currentUser, logout, updateFarmerCrops } = useAppContext();\n
+  // --- NEW INVENTORY LOGIC: Calculate Pending and Available Quantities ---
+  const getInventoryStats = (invId) => {
+      let pendingQty = 0;
+      
+      // 1. Pending from Active Listings
+      listings.forEach(l => {
+          if (l.status === 'Active') {
+              const match = l.id.match(/_INV:(.+)$/);
+              if (match && match[1] === invId) {
+                  pendingQty += Number(l.quantity);
+              }
+          }
+      });
+      
+      // 2. Pending from Direct Sales (bids)
+      bids.forEach(b => {
+          if (b.status === 'Action Required (Buyer)') {
+              if (b.listingId === `DIRECT_INV:${invId}`) {
+                  pendingQty += Number(b.quantity);
+              }
+          }
+      });
+      
+      return {
+          total: Number(inventory.find(i => i.id === invId)?.quantity || 0),
+          pending: pendingQty,
+          available: Math.max(0, Number(inventory.find(i => i.id === invId)?.quantity || 0) - pendingQty)
+      };
+  };
+
   const { t, language } = useLanguage();
 
   const speakText = (text) => {

@@ -143,56 +143,19 @@ export function AppProvider({ children }) {
     setListings([...listings, newListing]); // Optimistic UI
     await supabase.from('listings').insert([newListing]);
     
-    // Deduct from inventory immediately upon listing
-    const match = newListing.id.match(/_INV:(.+)$/);
-    const invId = match ? match[1] : null;
-
-    if (invId) {
-        const invItem = inventory.find(i => i.id === invId);
-        if (invItem) {
-            const newQty = Number(invItem.quantity) - Number(newListing.quantity);
-            setInventory(inventory.map(i => i.id === invId ? { ...i, quantity: newQty } : i));
-            await supabase.from('inventory').update({ quantity: newQty }).eq('id', invId);
-        }
-    }
-
+    // Inventory is no longer deducted here. It remains pending until a bid is accepted.
     if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
   };
 
   const removeListing = async (listingId) => {
-    const listing = listings.find(l => l.id === listingId);
-    
-    // Add back to inventory if the listing is removed without being fully sold
-    const match = listingId.match(/_INV:(.+)$/);
-    const invId = match ? match[1] : null;
-
-    if (listing && invId) {
-        const invItem = inventory.find(i => i.id === invId);
-        if (invItem) {
-            const newQty = Number(invItem.quantity) + Number(listing.quantity);
-            setInventory(inventory.map(i => i.id === invId ? { ...i, quantity: newQty } : i));
-            await supabase.from('inventory').update({ quantity: newQty }).eq('id', invId);
-        }
-    }
-
+    // No need to refund inventory because it was never deducted from the database.
     setListings(listings.filter(l => l.id !== listingId));
     await supabase.from('listings').delete().eq('id', listingId);
   };
 
   const addBid = async (newBid) => {
     setBids([...bids, newBid]);
-    
-    // If it's a Direct Sale, reserve inventory immediately
-    if (newBid.listingId && newBid.listingId.startsWith('DIRECT_INV:')) {
-        const invId = newBid.listingId.split('DIRECT_INV:')[1];
-        const invItem = inventory.find(i => i.id === invId);
-        if (invItem) {
-            const newQty = Number(invItem.quantity) - Number(newBid.quantity);
-            setInventory(inventory.map(i => i.id === invId ? { ...i, quantity: newQty } : i));
-            await supabase.from('inventory').update({ quantity: newQty }).eq('id', invId);
-        }
-    }
-
+    // Inventory is no longer deducted here.
     await supabase.from('bids').insert([newBid]);
     if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
   };
@@ -264,47 +227,48 @@ export function AppProvider({ children }) {
   const updateBidStatus = async (bidId, newStatus) => {
     const targetBid = bids.find(b => b.id === bidId);
     
-    if (newStatus === 'Accepted (Sold)') {
-      if (targetBid) {
-        const listing = listings.find(l => l.id === targetBid.listingId || (l.crop === targetBid.crop && l.farmerName === targetBid.farmerName));
-        
-        // Validate listing quantity if it exists
-        if (listing) {
-            if (Number(targetBid.quantity) > Number(listing.quantity)) {
-                return { success: false, message: `Insufficient Listing Quantity! The buyer requested ${targetBid.quantity}kg but you only have ${listing.quantity}kg remaining in this listing.` };
-            }
-            const newQty = Number(listing.quantity) - Number(targetBid.quantity);
-            const finalStatus = newQty <= 0 ? 'Sold Out' : 'Active';
-            setListings(listings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
-            await supabase.from('listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
-        }
-        
-        // Decrement Buyer's Global Demand
-        const buyerObj = buyers.find(b => b.name === targetBid.buyer);
-        if (buyerObj && buyerObj.quantityRequired) {
-            const newDemandQty = Math.max(0, Number(buyerObj.quantityRequired) - Number(targetBid.quantity));
-            setBuyers(buyers.map(b => b.id === buyerObj.id ? { ...b, quantityRequired: newDemandQty } : b));
-            await supabase.from('buyers').update({ quantityRequired: newDemandQty }).eq('id', buyerObj.id);
-        }
+    if (newStatus === 'Accepted (Sold)' && targetBid) {
+      // 1. Deduct Listing Quantity (if applicable)
+      const listing = listings.find(l => l.id === targetBid.listingId || (l.crop === targetBid.crop && l.farmerName === targetBid.farmerName));
+      if (listing) {
+          if (Number(targetBid.quantity) > Number(listing.quantity)) {
+              return { success: false, message: `Insufficient Listing Quantity! The buyer requested ${targetBid.quantity}kg but you only have ${listing.quantity}kg remaining.` };
+          }
+          const newQty = Number(listing.quantity) - Number(targetBid.quantity);
+          const finalStatus = newQty <= 0 ? 'Sold Out' : 'Active';
+          setListings(listings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
+          await supabase.from('listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
       }
-    } else if (newStatus === 'Rejected') {
-      // If a Direct Sale is rejected, refund the reserved inventory
+      
+      // 2. Deduct Inventory (for both Direct Sales and Listings)
       let invId = null;
-      if (targetBid && targetBid.listingId && targetBid.listingId.startsWith('DIRECT_INV:')) {
+      if (targetBid.listingId && targetBid.listingId.startsWith('DIRECT_INV:')) {
           invId = targetBid.listingId.split('DIRECT_INV:')[1];
-      } else if (targetBid && !targetBid.listingId && targetBid.inventoryId) {
+      } else if (listing && listing.id) {
+          const match = listing.id.match(/_INV:(.+)$/);
+          if (match) invId = match[1];
+      } else if (targetBid.inventoryId) {
           invId = targetBid.inventoryId;
       }
 
       if (invId) {
           const invItem = inventory.find(i => i.id === invId);
           if (invItem) {
-              const newQty = Number(invItem.quantity) + Number(targetBid.quantity);
-              setInventory(inventory.map(i => i.id === invId ? { ...i, quantity: newQty } : i));
-              await supabase.from('inventory').update({ quantity: newQty }).eq('id', invId);
+              const newInvQty = Math.max(0, Number(invItem.quantity) - Number(targetBid.quantity));
+              setInventory(inventory.map(i => i.id === invId ? { ...i, quantity: newInvQty } : i));
+              await supabase.from('inventory').update({ quantity: newInvQty }).eq('id', invId);
           }
       }
+      
+      // 3. Decrement Buyer's Global Demand
+      const buyerObj = buyers.find(b => b.name === targetBid.buyer);
+      if (buyerObj && buyerObj.quantityRequired) {
+          const newDemandQty = Math.max(0, Number(buyerObj.quantityRequired) - Number(targetBid.quantity));
+          setBuyers(buyers.map(b => b.id === buyerObj.id ? { ...b, quantityRequired: newDemandQty } : b));
+          await supabase.from('buyers').update({ quantityRequired: newDemandQty }).eq('id', buyerObj.id);
+      }
     }
+    // Note: If newStatus is 'Rejected', we DO NOTHING to inventory because we never deducted it!
     
     setBids(bids.map(bid => bid.id === bidId ? { ...bid, status: newStatus } : bid));
     await supabase.from('bids').update({ status: newStatus }).eq('id', bidId);
