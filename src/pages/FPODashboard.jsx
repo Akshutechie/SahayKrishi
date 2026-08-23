@@ -145,7 +145,19 @@ export default function FPODashboard() {
       {activeTab === 'overview' && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-            
+            <div className="glass-card flex-center" style={{ flexDirection: 'column', gap: '1rem', border: '1px solid var(--fpo-light)' }}>
+              <Users size={32} color="var(--fpo-primary)" />
+              <h3 style={{ margin: 0 }}>{t('farmer_directory')}</h3>
+              <p style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Manage profiles for {farmers.length} offline farmers in your network.</p>
+              <button className="btn btn-fpo" style={{ width: '100%' }} onClick={() => setShowDirectory(true)}>View Members</button>
+            </div>
+
+            <div className="glass-card flex-center" style={{ flexDirection: 'column', gap: '1rem', border: '1px solid var(--fpo-light)' }}>
+              <Building2 size={32} color="#0ea5e9" />
+              <h3 style={{ margin: 0 }}>{t('buyer_directory')}</h3>
+              <p style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>View {buyers.length} verified APEDA exporters and buyers.</p>
+              <button className="btn" style={{ width: '100%', background: '#0284c7', color: 'white' }} onClick={() => setShowBuyerDirectory(true)}>View Buyers</button>
+            </div>
           </div>
 
           
