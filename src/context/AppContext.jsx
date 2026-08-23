@@ -144,12 +144,15 @@ export function AppProvider({ children }) {
     await supabase.from('listings').insert([newListing]);
     
     // Deduct from inventory immediately upon listing
-    if (newListing.inventoryId) {
-        const invItem = inventory.find(i => i.id === newListing.inventoryId);
+    const match = newListing.id.match(/_INV:(.+)$/);
+    const invId = match ? match[1] : null;
+
+    if (invId) {
+        const invItem = inventory.find(i => i.id === invId);
         if (invItem) {
             const newQty = Number(invItem.quantity) - Number(newListing.quantity);
-            setInventory(inventory.map(i => i.id === newListing.inventoryId ? { ...i, quantity: newQty } : i));
-            await supabase.from('inventory').update({ quantity: newQty }).eq('id', newListing.inventoryId);
+            setInventory(inventory.map(i => i.id === invId ? { ...i, quantity: newQty } : i));
+            await supabase.from('inventory').update({ quantity: newQty }).eq('id', invId);
         }
     }
 
@@ -160,12 +163,15 @@ export function AppProvider({ children }) {
     const listing = listings.find(l => l.id === listingId);
     
     // Add back to inventory if the listing is removed without being fully sold
-    if (listing && listing.inventoryId) {
-        const invItem = inventory.find(i => i.id === listing.inventoryId);
+    const match = listingId.match(/_INV:(.+)$/);
+    const invId = match ? match[1] : null;
+
+    if (listing && invId) {
+        const invItem = inventory.find(i => i.id === invId);
         if (invItem) {
             const newQty = Number(invItem.quantity) + Number(listing.quantity);
-            setInventory(inventory.map(i => i.id === listing.inventoryId ? { ...i, quantity: newQty } : i));
-            await supabase.from('inventory').update({ quantity: newQty }).eq('id', listing.inventoryId);
+            setInventory(inventory.map(i => i.id === invId ? { ...i, quantity: newQty } : i));
+            await supabase.from('inventory').update({ quantity: newQty }).eq('id', invId);
         }
     }
 
@@ -176,13 +182,14 @@ export function AppProvider({ children }) {
   const addBid = async (newBid) => {
     setBids([...bids, newBid]);
     
-    // If it's a Direct Sale (no listingId), reserve inventory immediately
-    if (!newBid.listingId && newBid.inventoryId) {
-        const invItem = inventory.find(i => i.id === newBid.inventoryId);
+    // If it's a Direct Sale, reserve inventory immediately
+    if (newBid.listingId && newBid.listingId.startsWith('DIRECT_INV:')) {
+        const invId = newBid.listingId.split('DIRECT_INV:')[1];
+        const invItem = inventory.find(i => i.id === invId);
         if (invItem) {
             const newQty = Number(invItem.quantity) - Number(newBid.quantity);
-            setInventory(inventory.map(i => i.id === newBid.inventoryId ? { ...i, quantity: newQty } : i));
-            await supabase.from('inventory').update({ quantity: newQty }).eq('id', newBid.inventoryId);
+            setInventory(inventory.map(i => i.id === invId ? { ...i, quantity: newQty } : i));
+            await supabase.from('inventory').update({ quantity: newQty }).eq('id', invId);
         }
     }
 
@@ -274,12 +281,13 @@ export function AppProvider({ children }) {
       }
     } else if (newStatus === 'Rejected') {
       // If a Direct Sale is rejected, refund the reserved inventory
-      if (targetBid && !targetBid.listingId && targetBid.inventoryId) {
-          const invItem = inventory.find(i => i.id === targetBid.inventoryId);
+      if (targetBid && targetBid.listingId && targetBid.listingId.startsWith('DIRECT_INV:')) {
+          const invId = targetBid.listingId.split('DIRECT_INV:')[1];
+          const invItem = inventory.find(i => i.id === invId);
           if (invItem) {
               const newQty = Number(invItem.quantity) + Number(targetBid.quantity);
-              setInventory(inventory.map(i => i.id === targetBid.inventoryId ? { ...i, quantity: newQty } : i));
-              await supabase.from('inventory').update({ quantity: newQty }).eq('id', targetBid.inventoryId);
+              setInventory(inventory.map(i => i.id === invId ? { ...i, quantity: newQty } : i));
+              await supabase.from('inventory').update({ quantity: newQty }).eq('id', invId);
           }
       }
     }

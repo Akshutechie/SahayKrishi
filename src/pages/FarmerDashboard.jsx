@@ -288,9 +288,9 @@ export default function FarmerDashboard() {
     e.preventDefault();
     if (!newListing.crop || !newListing.quantity || !newListing.price) return;
     
+    const invSuffix = newListing.inventoryId ? `_INV:${newListing.inventoryId}` : '';
     addListing({
-      id: `L00${Math.random().toString(36).substr(2, 6)}`, 
-      inventoryId: newListing.inventoryId,
+      id: `L00${Math.random().toString(36).substr(2, 6)}${invSuffix}`, 
       crop: newListing.crop, 
       quantity: newListing.quantity, 
       price: newListing.price, 
@@ -364,7 +364,7 @@ export default function FarmerDashboard() {
       status: 'Action Required (Buyer)',
       farmerName: currentUser.name,
       farmerId: currentUser.id,
-      inventoryId: sellInventoryId
+      listingId: `DIRECT_INV:${sellInventoryId}`
     });
 
     alert(`Successfully sent a counter-bid of ${sellQuantity}kg to ${selectedExporter.name} at ₹${selectedExporter.price}/kg! Waiting for buyer acceptance.`);
