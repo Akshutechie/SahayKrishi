@@ -228,8 +228,12 @@ export function AppProvider({ children }) {
     const targetBid = bids.find(b => b.id === bidId);
     
     if (newStatus === 'Accepted (Sold)' && targetBid) {
-      // 1. Deduct Listing Quantity (if applicable)
-      const listing = listings.find(l => l.id === targetBid.listingId || (l.crop === targetBid.crop && l.farmerName === targetBid.farmerName));
+      // 1. Deduct Listing Quantity (if applicable - only if it is a true listing bid, not a Direct Sale)
+      let listing = null;
+      if (targetBid.listingId && !targetBid.listingId.startsWith('DIRECT_INV:')) {
+          listing = listings.find(l => l.id === targetBid.listingId);
+      }
+      
       if (listing) {
           if (Number(targetBid.quantity) > Number(listing.quantity)) {
               return { success: false, message: `Insufficient Listing Quantity! The buyer requested ${targetBid.quantity}kg but you only have ${listing.quantity}kg remaining.` };
@@ -264,8 +268,13 @@ export function AppProvider({ children }) {
       const buyerObj = buyers.find(b => b.name === targetBid.buyer && b.requiredCrop === targetBid.crop);
       if (buyerObj && buyerObj.quantityRequired) {
           const newDemandQty = Math.max(0, Number(buyerObj.quantityRequired) - Number(targetBid.quantity));
-          setBuyers(buyers.map(b => b.id === buyerObj.id ? { ...b, quantityRequired: newDemandQty } : b));
-          await supabase.from('buyers').update({ quantityRequired: newDemandQty }).eq('id', buyerObj.id);
+          if (newDemandQty === 0) {
+              setBuyers(buyers.map(b => b.id === buyerObj.id ? { ...b, requiredCrop: null, quantityRequired: null, targetPrice: null } : b));
+              await supabase.from('buyers').update({ requiredCrop: null, quantityRequired: null, targetPrice: null }).eq('id', buyerObj.id);
+          } else {
+              setBuyers(buyers.map(b => b.id === buyerObj.id ? { ...b, quantityRequired: newDemandQty } : b));
+              await supabase.from('buyers').update({ quantityRequired: newDemandQty }).eq('id', buyerObj.id);
+          }
       }
     }
     // Note: If newStatus is 'Rejected', we DO NOTHING to inventory because we never deducted it!
