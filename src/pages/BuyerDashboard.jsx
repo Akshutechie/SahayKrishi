@@ -330,11 +330,7 @@ export default function BuyerDashboard() {
                   <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{location}</td>
                   <td style={{ padding: '1rem', fontWeight: '500' }}>
                   {listing.crop}
-                  {listing.grade && (
-                    <span style={{ marginLeft: '8px', fontSize: '0.75rem', padding: '2px 8px', background: listing.grade === 'Organic' ? '#dcfce7' : listing.grade === 'Grade A' ? '#fef3c7' : '#f3f4f6', color: listing.grade === 'Organic' ? '#16a34a' : listing.grade === 'Grade A' ? '#d97706' : '#4b5563', borderRadius: '12px', display: 'inline-block' }}>
-                      {listing.grade}
-                    </span>
-                  )}
+                  
                 </td>
                   <td style={{ padding: '1rem' }}>{listing.quantity} kg</td>
                   <td style={{ padding: '1rem' }}>₹{listing.price} / kg</td>

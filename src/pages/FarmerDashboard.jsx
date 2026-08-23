@@ -163,8 +163,8 @@ export default function FarmerDashboard() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   
   // Form/Selection State
-  const [newListing, setNewListing] = useState({ inventoryId: '', crop: '', quantity: '', price: '', grade: 'Grade A' });
-  const [newInventory, setNewInventory] = useState({ crop: '', grade: 'Grade A', quantity: '', harvestDate: '' });
+  const [newListing, setNewListing] = useState({ inventoryId: '', crop: '', quantity: '', price: '' });
+  const [newInventory, setNewInventory] = useState({ crop: '', quantity: '', harvestDate: '' });
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
   const [selectedExporter, setSelectedExporter] = useState(null);
   const [selectedBid, setSelectedBid] = useState(null);
@@ -311,7 +311,7 @@ export default function FarmerDashboard() {
       quantity: Number(newInventory.quantity),
       harvestDate: newInventory.harvestDate || new Date().toISOString().split('T')[0]
     });
-    setNewInventory({ crop: '', grade: 'Grade A', quantity: '', harvestDate: '' });
+    setNewInventory({ crop: '', quantity: '', harvestDate: '' });
     setIsInventoryModalOpen(false);
   };
 
@@ -330,7 +330,7 @@ export default function FarmerDashboard() {
       farmerName: currentUser.name,
       farmerId: currentUser.id
     });
-    setNewListing({ inventoryId: '', crop: '', quantity: '', price: '', grade: 'Grade A' });
+    setNewListing({ inventoryId: '', crop: '', quantity: '', price: '' });
     setIsListingModalOpen(false);
   };
 
@@ -678,12 +678,12 @@ export default function FarmerDashboard() {
               {myInventory.map(inv => (
                 <tr key={inv.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                   <td style={{ padding: '1rem', fontWeight: '500' }}>{inv.crop}</td>
-                  <td style={{ padding: '1rem' }}>{inv.grade}</td>
+                  
                   <td style={{ padding: '1rem', fontWeight: 'bold' }}>{inv.quantity} kg</td>
                   <td style={{ padding: '1rem' }}>{inv.harvestDate}</td>
                   <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
                     <button className="btn btn-farmer" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={() => {
-                      setNewListing({ inventoryId: inv.id, crop: inv.crop, grade: inv.grade, quantity: '', price: '' });
+                      setNewListing({ inventoryId: inv.id, crop: inv.crop, quantity: '', price: '' });
                       setIsListingModalOpen(true);
                     }}>Post to Market</button>
                     <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', color: '#ef4444' }} onClick={() => removeInventory(inv.id)}>Remove</button>
@@ -720,11 +720,7 @@ export default function FarmerDashboard() {
               <tr key={listing.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                 <td style={{ padding: '1rem', fontWeight: '500' }}>
                   {listing.crop}
-                  {listing.grade && (
-                    <span style={{ marginLeft: '8px', fontSize: '0.75rem', padding: '2px 8px', background: listing.grade === 'Organic' ? '#dcfce7' : listing.grade === 'Grade A' ? '#fef3c7' : '#f3f4f6', color: listing.grade === 'Organic' ? '#16a34a' : listing.grade === 'Grade A' ? '#d97706' : '#4b5563', borderRadius: '12px', display: 'inline-block' }}>
-                      {listing.grade}
-                    </span>
-                  )}
+                  
                 </td>
                 <td style={{ padding: '1rem' }}>{listing.quantity} kg</td>
                 <td style={{ padding: '1rem' }}>₹{listing.price} / kg</td>
@@ -816,19 +812,7 @@ export default function FarmerDashboard() {
                   </select>
                 </div>
                 
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>Quality Grade</label>
-                  <select 
-                    value={newInventory.grade} 
-                    onChange={e => setNewInventory({...newInventory, grade: e.target.value})} 
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                    required
-                  >
-                    <option value="Grade A">Grade A (Premium Quality)</option>
-                    <option value="Grade B">Grade B (Standard Quality)</option>
-                    <option value="Grade C">Grade C (Processing Quality)</option>
-                  </select>
-                </div>
+                
 
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
                   <div style={{ flex: 1 }}>
@@ -910,19 +894,7 @@ export default function FarmerDashboard() {
                 </select>
               </div>
               
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Quality Grade</label>
-                <select 
-                  value={newListing.grade} 
-                  onChange={e => setNewListing({...newListing, grade: e.target.value})} 
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                  required
-                >
-                  <option value="Grade A">Grade A (Premium Export Quality)</option>
-                  <option value="Grade B">Grade B (Standard Market Quality)</option>
-                  <option value="Organic">100% Certified Organic</option>
-                </select>
-              </div>
+              
 
                 {suggestedPrice && newListing.crop && (
                   <div style={{ padding: '0.75rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -969,7 +941,7 @@ export default function FarmerDashboard() {
               >
                 <option value="" disabled>Select from warehouse...</option>
                 {myInventory.filter(i => i.crop.toLowerCase() === selectedExporter.crop.toLowerCase() && i.quantity > 0).map(inv => (
-                  <option key={inv.id} value={inv.id}>{inv.crop} ({inv.grade}) - {inv.quantity}kg available</option>
+                  <option key={inv.id} value={inv.id}>{inv.crop} - {inv.quantity}kg available</option>
                 ))}
               </select>
               {myInventory.filter(i => i.crop.toLowerCase() === selectedExporter.crop.toLowerCase() && i.quantity > 0).length === 0 && (
