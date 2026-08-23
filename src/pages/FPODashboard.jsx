@@ -537,7 +537,7 @@ export default function FPODashboard() {
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Select Buyer Entity</label>
                 <select style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newDemand.buyerId} onChange={e => setNewDemand({...newDemand, buyerId: e.target.value})} required>
                   <option value="">-- Choose Buyer --</option>
-                  {buyers.filter(b => !b.requiredCrop).map(b => (
+                  {Array.from(new Map(buyers.filter(b => !b.requiredCrop).map(b => [b.name, b])).values()).map(b => (
                     <option key={b.id} value={b.id}>{b.name} ({b.type})</option>
                   ))}
                 </select>

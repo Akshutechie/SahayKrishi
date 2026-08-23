@@ -61,8 +61,40 @@ export function AppProvider({ children }) {
       }
     };
     
+    
     fetchCloudData();
-  }, []);
+
+    // --- SUPABASE REALTIME SUBSCRIPTIONS ---
+    const listingsSub = supabase
+      .channel('custom-listings-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, (payload) => {
+        console.log('Realtime listing update:', payload);
+        fetchCloudData(); // Automatically refresh data without page reload
+      })
+      .subscribe();
+
+    const bidsSub = supabase
+      .channel('custom-bids-channel')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bids' }, (payload) => {
+        console.log('Realtime bid update:', payload);
+        fetchCloudData(); // Automatically refresh data without page reload
+      })
+      .subscribe();
+
+        const globalSync = supabase
+      .channel('global-sync')
+      .on('broadcast', { event: 'sync-data' }, (payload) => {
+        console.log('Broadcast sync received!');
+        fetchCloudData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(listingsSub);
+      supabase.removeChannel(bidsSub);
+      supabase.removeChannel(globalSync);
+    };}, []);
+
 
   // --- ACTIONS (Optimistic UI + Supabase Writes) ---
   
@@ -100,6 +132,7 @@ export function AppProvider({ children }) {
   const addListing = async (newListing) => {
     setListings([...listings, newListing]); // Optimistic UI
     await supabase.from('listings').insert([newListing]);
+    await supabase.channel('global-sync').send({ type: 'broadcast', event: 'sync-data', payload: {} });
   };
 
   const removeListing = async (listingId) => {
@@ -110,6 +143,7 @@ export function AppProvider({ children }) {
   const addBid = async (newBid) => {
     setBids([...bids, newBid]);
     await supabase.from('bids').insert([newBid]);
+    await supabase.channel('global-sync').send({ type: 'broadcast', event: 'sync-data', payload: {} });
   };
 
   const addBuyerDemand = async (newDemand) => {
