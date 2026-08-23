@@ -93,7 +93,7 @@ export default function BuyerDashboard() {
     if (!selectedListing || !bidOffer.price) return;
 
     addBid({
-      id: `B00${bids.length + 2}`,
+      id: `B00${Math.random().toString(36).substr(2, 6)}`,
       buyer: currentUser.name,
       crop: selectedListing.crop,
       quantity: selectedListing.quantity,
@@ -177,7 +177,7 @@ export default function BuyerDashboard() {
                 <td style={{ padding: '1rem', fontWeight: '500' }}>{sale.farmerName}</td>
                 <td style={{ padding: '1rem' }}>{sale.crop}</td>
                 <td style={{ padding: '1rem' }}>{sale.quantity} kg</td>
-                <td style={{ padding: '1rem', fontWeight: 'bold', color: '#dc2626' }}>₹{(Number(sale.quantity) * Number(sale.bidPrice)).toLocaleString()}</td>
+                <td style={{ padding: '1rem', fontWeight: 'bold', color: '#dc2626' }}>₹{((Number(sale.quantity) || 0) * (Number(sale.bidPrice) || 0)).toLocaleString()}</td>
               </tr>
             ))}
             {completedPurchases.length === 0 && (
@@ -263,6 +263,7 @@ export default function BuyerDashboard() {
               <th style={{ padding: '1rem' }}>Seller</th>
               <th style={{ padding: '1rem' }}>Crop & Grade</th>
               <th style={{ padding: '1rem' }}>Aggregated Quantity</th>
+              <th style={{ padding: '1rem' }}>Asking Price</th>
               <th style={{ padding: '1rem' }}>Contributing Farmers</th>
               <th style={{ padding: '1rem' }}>{t('action')}</th>
             </tr>
@@ -280,9 +281,10 @@ export default function BuyerDashboard() {
                   )}
                 </td>
                 <td style={{ padding: '1rem', fontWeight: 'bold' }}>{listing.quantity} kg</td>
+                <td style={{ padding: '1rem', color: '#16a34a', fontWeight: '600' }}>₹{listing.price} / kg</td>
                 <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{listing.contributors} Farmers</td>
                 <td style={{ padding: '1rem' }}>
-                  <button className="btn" style={{ background: '#be185d', color: 'white', padding: '0.4rem 0.8rem', fontSize: '0.9rem' }} onClick={() => handleOpenBid({ ...listing, farmerName: 'FPO Aggregated Lot', farmerId: 'FPO', price: '' })}>
+                  <button className="btn" style={{ background: '#be185d', color: 'white', padding: '0.4rem 0.8rem', fontSize: '0.9rem' }} onClick={() => handleOpenBid({ ...listing, farmerName: 'FPO Aggregated Lot', farmerId: 'FPO', price: listing.price || '' })}>
                     Place Bid
                   </button>
                 </td>

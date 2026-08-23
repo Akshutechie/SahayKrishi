@@ -149,6 +149,7 @@ export function AppProvider({ children }) {
   const addBuyerDemand = async (newDemand) => {
     setBuyers([...buyers, newDemand]);
     await supabase.from('buyers').insert([newDemand]);
+    await supabase.channel('global-sync').send({ type: 'broadcast', event: 'sync-data', payload: {} });
   };
 
   const removeBuyerDemand = async (demandId) => {
@@ -158,6 +159,7 @@ export function AppProvider({ children }) {
         : b
     ));
     await supabase.from('buyers').update({ requiredCrop: null, quantityRequired: null, targetPrice: null }).eq('id', demandId);
+    await supabase.channel('global-sync').send({ type: 'broadcast', event: 'sync-data', payload: {} });
   };
 
   const addFarmer = async (newFarmer) => {
@@ -210,6 +212,7 @@ export function AppProvider({ children }) {
   const addBulkListing = async (newBulk) => {
     setBulkListings([...bulkListings, newBulk]);
     await supabase.from('bulk_listings').insert([newBulk]);
+    await supabase.channel('global-sync').send({ type: 'broadcast', event: 'sync-data', payload: {} });
   };
 
   const updateBidStatus = async (bidId, newStatus) => {

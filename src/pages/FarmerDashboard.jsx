@@ -92,7 +92,7 @@ export default function FarmerDashboard() {
     let avgPrice = 0;
     if (acceptedBids.length > 0) {
       const sumPrice = acceptedBids.reduce((sum, b) => sum + (Number(b.bidPrice || b.amount) || 0), 0);
-      avgPrice = Math.round(sumPrice / acceptedBids.length);
+      avgPrice = acceptedBids.length > 0 ? Math.round(sumPrice / acceptedBids.length) : (cropName.toLowerCase().includes('onion') ? 22 : cropName.toLowerCase().includes('tomato') ? 15 : 25);
     } else {
       // Fallback if no accepted bids yet
       avgPrice = cropName.toLowerCase().includes('onion') ? 30 : cropName.toLowerCase().includes('tomato') ? 40 : 25;
@@ -157,8 +157,9 @@ export default function FarmerDashboard() {
 
   // --- AI FORECAST ALGORITHM ---
   const generateForecast = (cropName) => {
-    const demandQty = buyers.filter(b => b.requiredCrop === cropName).reduce((sum, b) => sum + (Number(b.quantityRequired) || 0), 0);
-    const supplyQty = listings.filter(l => l.crop === cropName && l.status === 'Active').reduce((sum, l) => sum + (Number(l.quantity) || 0), 0);
+    const safeCrop = (cropName || '').toLowerCase();
+    const demandQty = buyers.filter(b => (b.requiredCrop || '').toLowerCase() === safeCrop).reduce((sum, b) => sum + (Number(b.quantityRequired) || 0), 0);
+    const supplyQty = listings.filter(l => (l.crop || '').toLowerCase() === safeCrop && l.status === 'Active').reduce((sum, l) => sum + (Number(l.quantity) || 0), 0);
     
     if (demandQty === 0 && supplyQty === 0) return { msg: t('forecast_no_data', { crop: cropName }), rec: t('forecast_rec_no_data'), color: '#94a3b8' };
     if (demandQty > supplyQty * 1.5) return { msg: t('forecast_high_demand', { crop: cropName }), rec: t('forecast_rec_high_demand'), color: '#16a34a' };
@@ -258,7 +259,7 @@ export default function FarmerDashboard() {
     if (!newListing.crop || !newListing.quantity || !newListing.price) return;
     
     addListing({
-      id: `L00${listings.length + 2}`, 
+      id: `L00${Math.random().toString(36).substr(2, 6)}`, 
       crop: newListing.crop, 
       quantity: newListing.quantity, 
       price: newListing.price, 

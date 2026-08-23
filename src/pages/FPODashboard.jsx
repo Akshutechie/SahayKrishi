@@ -7,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 export default function FPODashboard() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { currentUser, farmers, buyers, bulkListings, addBulkListing, listings, bids, addBuyerDemand, addFarmer, deleteFarmer, addBuyer, deleteBuyer, toggleBlockFarmer, toggleBlockBuyer } = useAppContext();
+  const { currentUser, farmers, buyers, bulkListings, addBulkListing, listings, bids, updateBidStatus, addBuyerDemand, addFarmer, deleteFarmer, addBuyer, deleteBuyer, toggleBlockFarmer, toggleBlockBuyer } = useAppContext();
   
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'fpo') {
@@ -25,7 +25,7 @@ export default function FPODashboard() {
   const [isDemandModalOpen, setIsDemandModalOpen] = useState(false);
   
   // Form State
-  const [newBulk, setNewBulk] = useState({ crop: '', quantity: '', contributors: '' });
+  const [newBulk, setNewBulk] = useState({ crop: '', quantity: '', contributors: '', price: '' });
   const [newDemand, setNewDemand] = useState({ buyerId: '', crop: '', quantity: '', price: '' });
   const [newFarmer, setNewFarmer] = useState({ name: '', location: '', phone: '' });
   const [newBuyer, setNewBuyer] = useState({ name: '', type: 'APEDA Exporter', location: '' });
@@ -62,17 +62,18 @@ export default function FPODashboard() {
   };
   const handleCreateBulkListing = (e) => {
     e.preventDefault();
-    if (!newBulk.crop || !newBulk.quantity || !newBulk.contributors) return;
+    if (!newBulk.crop || !newBulk.quantity || !newBulk.contributors || !newBulk.price) return;
     
     addBulkListing({
-      id: `BLK00${bulkListings.length + 2}`,
+      id: `BLK00${Math.random().toString(36).substr(2, 6)}`,
       crop: newBulk.crop,
       quantity: newBulk.quantity,
       contributors: newBulk.contributors,
+      price: newBulk.price,
       status: 'Awaiting Bids'
     });
     
-    setNewBulk({ crop: '', quantity: '', contributors: '' });
+    setNewBulk({ crop: '', quantity: '', contributors: '', price: '' });
     setIsBulkModalOpen(false);
     alert('Bulk listing successfully created and posted to APEDA Exporters!');
   };
@@ -201,6 +202,7 @@ export default function FPODashboard() {
                   <tr key={listing.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '1rem', fontWeight: '500' }}>{listing.crop}</td>
                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>{listing.quantity} kg</td>
+                    <td style={{ padding: '1rem', color: '#16a34a', fontWeight: '600' }}>₹{listing.price} / kg</td>
                     <td style={{ padding: '1rem' }}>{listing.contributors} Farmers</td>
                     <td style={{ padding: '1rem' }}>
                       <span style={{ padding: '0.25rem 0.75rem', background: '#fef3c7', color: '#b45309', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>
@@ -210,7 +212,7 @@ export default function FPODashboard() {
                   </tr>
                 ))}
                 {bulkListings.length === 0 && (
-                  <tr><td colSpan="4" style={{ padding: '1rem', textAlign: 'center' }}>No bulk listings active.</td></tr>
+                  <tr><td colSpan="5" style={{ padding: '1rem', textAlign: 'center' }}>No bulk listings active.</td></tr>
                 )}
               </tbody>
             </table>
@@ -318,7 +320,7 @@ export default function FPODashboard() {
                     <td style={{ padding: '1rem', fontWeight: '500' }}>{sale.buyer}</td>
                     <td style={{ padding: '1rem' }}>{sale.quantity}kg {sale.crop}</td>
                     <td style={{ padding: '1rem' }}>₹{sale.bidPrice}/kg</td>
-                    <td style={{ padding: '1rem', fontWeight: 'bold', color: '#16a34a' }}>₹{(Number(sale.quantity) * Number(sale.bidPrice)).toLocaleString()}</td>
+                    <td style={{ padding: '1rem', fontWeight: 'bold', color: '#16a34a' }}>₹{((Number(sale.quantity) || 0) * (Number(sale.bidPrice) || 0)).toLocaleString()}</td>
                   </tr>
                 ))}
                 {completedSales.length === 0 && (
@@ -338,7 +340,7 @@ export default function FPODashboard() {
                   <th style={{ padding: '1rem' }}>To (Farmer)</th>
                   <th style={{ padding: '1rem' }}>Crop Offer</th>
                   <th style={{ padding: '1rem' }}>Bid Price</th>
-                  <th style={{ padding: '1rem' }}>{t('status')}</th>
+                  <th style={{ padding: '1rem' }}>{t('status')} / Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -350,13 +352,20 @@ export default function FPODashboard() {
                     <td style={{ padding: '1rem' }}>{bid.quantity}kg {bid.crop}</td>
                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>₹{bid.bidPrice}/kg</td>
                     <td style={{ padding: '1rem' }}>
-                      <span style={{ 
-                        padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.85rem', fontWeight: '600',
-                        background: bid.status === 'Pending' ? '#fef08a' : '#fecaca',
-                        color: bid.status === 'Pending' ? '#854d0e' : '#991b1b'
-                      }}>
-                        {bid.status}
-                      </span>
+                      {bid.farmerId === 'FPO' && bid.status === 'Pending' ? (
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button className="btn" style={{ background: '#16a34a', color: 'white', padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={() => updateBidStatus(bid.id, 'Accepted (Sold)')}>Accept</button>
+                          <button className="btn" style={{ background: '#dc2626', color: 'white', padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={() => updateBidStatus(bid.id, 'Rejected')}>Reject</button>
+                        </div>
+                      ) : (
+                        <span style={{ 
+                          padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.85rem', fontWeight: '600',
+                          background: bid.status === 'Pending' ? '#fef08a' : '#fecaca',
+                          color: bid.status === 'Pending' ? '#854d0e' : '#991b1b'
+                        }}>
+                          {bid.status}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -514,9 +523,13 @@ export default function FPODashboard() {
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Total Aggregated Quantity (kg)</label>
                 <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newBulk.quantity} onChange={e => setNewBulk({...newBulk, quantity: e.target.value})} required />
               </div>
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Number of Contributing Farmers</label>
                 <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newBulk.contributors} onChange={e => setNewBulk({...newBulk, contributors: e.target.value})} required />
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Asking Price (₹/kg)</label>
+                <input type="number" placeholder="e.g. 35" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newBulk.price} onChange={e => setNewBulk({...newBulk, price: e.target.value})} required />
               </div>
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                 <button type="button" className="btn" onClick={() => setIsBulkModalOpen(false)}>Cancel</button>
