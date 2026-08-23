@@ -22,7 +22,8 @@ export default function FarmerDashboard() {
       });
       return Math.max(0, Number(buyer.quantityRequired || 0) - pendingQty);
   };
-\n  // --- NEW INVENTORY LOGIC: Calculate Pending and Available Quantities ---
+
+  // --- NEW INVENTORY LOGIC: Calculate Pending and Available Quantities ---
   const getInventoryStats = (invId) => {
       let pendingQty = 0;
       
