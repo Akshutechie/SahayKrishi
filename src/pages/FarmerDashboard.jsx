@@ -9,7 +9,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 export default function FarmerDashboard() {
   const navigate = useNavigate();
-  const { inventory, addInventory, removeInventory, listings, bids, buyers, addListing, addBid, updateBidStatus, removeBuyerDemand, removeListing, currentUser, logout, updateFarmerCrops } = useAppContext();\n
+  const { inventory, addInventory, removeInventory, listings, bids, buyers, addListing, addBid, updateBidStatus, removeBuyerDemand, removeListing, currentUser, logout, updateFarmerCrops } = useAppContext();
+
   // --- NEW INVENTORY LOGIC: Calculate Pending and Available Quantities ---
   const getInventoryStats = (invId) => {
       let pendingQty = 0;
