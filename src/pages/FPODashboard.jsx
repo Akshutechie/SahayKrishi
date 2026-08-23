@@ -7,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 export default function FPODashboard() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { currentUser, farmers, buyers, listings, bids, updateBidStatus, addBuyerDemand, addFarmer, deleteFarmer, addBuyer, deleteBuyer, toggleBlockFarmer, toggleBlockBuyer } = useAppContext();
+  const { currentUser, farmers, buyers, listings, bids, updateBidStatus, addFarmer, deleteFarmer, addBuyer, deleteBuyer, toggleBlockFarmer, toggleBlockBuyer } = useAppContext();
   
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'fpo') {
@@ -21,11 +21,9 @@ export default function FPODashboard() {
   const [showBuyerDirectory, setShowBuyerDirectory] = useState(false);
   
   // Modal State
-    const [isDemandModalOpen, setIsDemandModalOpen] = useState(false);
-  
+      
   // Form State
-    const [newDemand, setNewDemand] = useState({ buyerId: '', crop: '', quantity: '', price: '' });
-  const [newFarmer, setNewFarmer] = useState({ name: '', location: '', phone: '' });
+      const [newFarmer, setNewFarmer] = useState({ name: '', location: '', phone: '' });
   const [newBuyer, setNewBuyer] = useState({ name: '', type: 'APEDA Exporter', location: '' });
 
   // Filtered Data
@@ -59,26 +57,6 @@ export default function FPODashboard() {
     setNewBuyer({ name: '', type: 'APEDA Exporter', location: '' });
   };
   
-  const handleCreateDemand = (e) => {
-    e.preventDefault();
-    const buyer = buyers.find(b => b.id === newDemand.buyerId);
-    if (!buyer) return alert("Please select a valid corporate buyer.");
-
-    addBuyerDemand({
-      id: `D00${Math.floor(Math.random() * 10000)}`,
-      name: buyer.name,
-      type: buyer.type,
-      location: buyer.location,
-      requiredCrop: newDemand.crop,
-      quantityRequired: newDemand.quantity,
-      targetPrice: newDemand.price
-    });
-    
-    setIsDemandModalOpen(false);
-    setNewDemand({ buyerId: '', crop: '', quantity: '', price: '' });
-    alert('Corporate demand successfully posted to the global market!');
-  };
-
   const confirmAction = (actionName, callback) => {
     if (window.confirm(`Are you sure you want to ${actionName} this user?`)) {
       if (window.confirm(`This action is critical. Please confirm again that you want to ${actionName} this user.`)) {
@@ -169,39 +147,7 @@ export default function FPODashboard() {
           ========================================= */}
       {activeTab === 'market' && (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2 style={{ color: '#0369a1', margin: 0 }}>Global Corporate Demands</h2>
-            <button className="btn" style={{ background: '#0284c7', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setIsDemandModalOpen(true)}>
-              <PlusCircle size={18} /> Post New Demand
-            </button>
-          </div>
-          <div className="glass-card table-responsive" style={{ padding: '0', marginBottom: '2rem' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: '#e0f2fe', borderBottom: '1px solid #7dd3fc', color: '#0369a1' }}>
-                  <th style={{ padding: '1rem' }}>Buyer Name</th>
-                  <th style={{ padding: '1rem' }}>Required Crop</th>
-                  <th style={{ padding: '1rem' }}>Quantity Needed</th>
-                  <th style={{ padding: '1rem' }}>Target Price</th>
-                  <th style={{ padding: '1rem' }}>Location</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeDemands.map((buyer, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '1rem', fontWeight: '500' }}>{buyer.name}</td>
-                    <td style={{ padding: '1rem' }}>{buyer.requiredCrop}</td>
-                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>{buyer.quantityRequired} kg</td>
-                    <td style={{ padding: '1rem', color: '#16a34a', fontWeight: '600' }}>₹{buyer.targetPrice} / kg</td>
-                    <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{buyer.location}</td>
-                  </tr>
-                ))}
-                {activeDemands.length === 0 && (
-                  <tr><td colSpan="5" style={{ padding: '1rem', textAlign: 'center' }}>No active demands at this time.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          
 
           <h2 style={{ marginBottom: '1rem', color: '#16a34a' }}>Global Farmer Listings</h2>
           <div className="glass-card table-responsive" style={{ padding: '0', marginBottom: '2rem' }}>
@@ -453,53 +399,6 @@ export default function FPODashboard() {
         </div>
       )}
 
-      {/* Post New Demand Modal */}
-      {isDemandModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsDemandModalOpen(false)}>
-          <div className="modal-content" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem', color: '#0369a1' }}>Post Corporate Demand</h2>
-            <form onSubmit={handleCreateDemand}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Select Buyer Entity</label>
-                <select style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newDemand.buyerId} onChange={e => setNewDemand({...newDemand, buyerId: e.target.value})} required>
-                  <option value="">-- Choose Buyer --</option>
-                  {Array.from(new Map(buyers.filter(b => !b.requiredCrop).map(b => [b.name, b])).values()).map(b => (
-                    <option key={b.id} value={b.id}>{b.name} ({b.type})</option>
-                  ))}
-                </select>
-                <small style={{ color: 'var(--text-secondary)', display: 'block', marginTop: '0.25rem' }}>Only showing buyers without active demands.</small>
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Required Crop</label>
-                <select style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }} value={newDemand.crop} onChange={e => setNewDemand({...newDemand, crop: e.target.value})} required>
-                    <option value="" disabled>Select a Crop</option>
-                    <option value="Onion">Onion</option>
-                    <option value="Tomato">Tomato</option>
-                    <option value="Potato">Potato</option>
-                    <option value="Rice">Rice</option>
-                    <option value="Wheat">Wheat</option>
-                    <option value="Cotton">Cotton</option>
-                  </select>
-              </div>
-              <div className="stack-mobile" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>Quantity (kg)</label>
-                  <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newDemand.quantity} onChange={e => setNewDemand({...newDemand, quantity: e.target.value})} required />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>Target Price (₹)</label>
-                  <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newDemand.price} onChange={e => setNewDemand({...newDemand, price: e.target.value})} required />
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn" onClick={() => setIsDemandModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn" style={{ background: '#0284c7', color: 'white' }}>Publish Demand</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
-}
+      </div>
+    );
+  }
