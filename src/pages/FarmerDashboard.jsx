@@ -254,6 +254,15 @@ export default function FarmerDashboard() {
     navigate('/');
   };
 
+  const getSuggestedPrice = (cropName) => {
+    if (!cropName) return null;
+    const pastSales = bids.filter(b => b.crop.toLowerCase() === cropName.toLowerCase() && b.status.includes('Accepted'));
+    if (pastSales.length === 0) return (cropName.toLowerCase() === 'onion' ? 22 : cropName.toLowerCase() === 'tomato' ? 15 : 25);
+    const sum = pastSales.reduce((acc, sale) => acc + Number(sale.bidPrice || 0), 0);
+    return Math.round(sum / pastSales.length);
+  };
+  const suggestedPrice = getSuggestedPrice(newListing.crop);
+
   const handleCreateListing = (e) => {
     e.preventDefault();
     if (!newListing.crop || !newListing.quantity || !newListing.price) return;
@@ -748,6 +757,13 @@ export default function FarmerDashboard() {
                   <option value="Organic">100% Certified Organic</option>
                 </select>
               </div>
+
+                {suggestedPrice && newListing.crop && (
+                  <div style={{ padding: '0.75rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1.2rem' }}>💡</span> 
+                    <span><strong>AI Market Intel:</strong> The current average price for {newListing.crop} is <strong>₹{suggestedPrice}/kg</strong>. We recommend pricing between ₹{suggestedPrice - 2} - ₹{suggestedPrice + 3}.</span>
+                  </div>
+                )}
 
               <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ flex: 1 }}>
