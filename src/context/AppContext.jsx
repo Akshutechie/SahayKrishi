@@ -81,7 +81,7 @@ export function AppProvider({ children }) {
       })
       .subscribe();
 
-        const globalSync = supabase
+        window.globalSyncChannel = supabase
       .channel('global-sync')
       .on('broadcast', { event: 'sync-data' }, (payload) => {
         console.log('Broadcast sync received!');
@@ -92,7 +92,7 @@ export function AppProvider({ children }) {
     return () => {
       supabase.removeChannel(listingsSub);
       supabase.removeChannel(bidsSub);
-      supabase.removeChannel(globalSync);
+      if (window.globalSyncChannel) supabase.removeChannel(window.globalSyncChannel);
     };}, []);
 
 
@@ -132,7 +132,7 @@ export function AppProvider({ children }) {
   const addListing = async (newListing) => {
     setListings([...listings, newListing]); // Optimistic UI
     await supabase.from('listings').insert([newListing]);
-    await supabase.channel('global-sync').send({ type: 'broadcast', event: 'sync-data', payload: {} });
+    if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
   };
 
   const removeListing = async (listingId) => {
@@ -143,13 +143,13 @@ export function AppProvider({ children }) {
   const addBid = async (newBid) => {
     setBids([...bids, newBid]);
     await supabase.from('bids').insert([newBid]);
-    await supabase.channel('global-sync').send({ type: 'broadcast', event: 'sync-data', payload: {} });
+    if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
   };
 
   const addBuyerDemand = async (newDemand) => {
     setBuyers([...buyers, newDemand]);
     await supabase.from('buyers').insert([newDemand]);
-    await supabase.channel('global-sync').send({ type: 'broadcast', event: 'sync-data', payload: {} });
+    if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
   };
 
   const removeBuyerDemand = async (demandId) => {
@@ -159,7 +159,7 @@ export function AppProvider({ children }) {
         : b
     ));
     await supabase.from('buyers').update({ requiredCrop: null, quantityRequired: null, targetPrice: null }).eq('id', demandId);
-    await supabase.channel('global-sync').send({ type: 'broadcast', event: 'sync-data', payload: {} });
+    if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
   };
 
   const addFarmer = async (newFarmer) => {
@@ -212,7 +212,7 @@ export function AppProvider({ children }) {
   const addBulkListing = async (newBulk) => {
     setBulkListings([...bulkListings, newBulk]);
     await supabase.from('bulk_listings').insert([newBulk]);
-    await supabase.channel('global-sync').send({ type: 'broadcast', event: 'sync-data', payload: {} });
+    if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
   };
 
   const updateBidStatus = async (bidId, newStatus) => {
@@ -222,16 +222,29 @@ export function AppProvider({ children }) {
     if (newStatus === 'Accepted (Sold)') {
       const acceptedBid = bids.find(b => b.id === bidId);
       if (acceptedBid) {
-        setListings(listings.map(l => 
-          (l.crop === acceptedBid.crop && l.farmerName === acceptedBid.farmerName) 
-            ? { ...l, status: 'Sold' } 
-            : l
-        ));
-        await supabase.from('listings').update({ status: 'Sold' })
-          .eq('crop', acceptedBid.crop)
-          .eq('farmerName', acceptedBid.farmerName);
+        if (acceptedBid.farmerId === 'FPO') {
+            const listing = bulkListings.find(l => l.id === acceptedBid.listingId);
+            if (listing) {
+                const newQty = Number(listing.quantity) - Number(acceptedBid.quantity);
+                const finalStatus = newQty <= 0 ? 'Sold Out' : 'Awaiting Bids';
+                setBulkListings(bulkListings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
+                await supabase.from('bulk_listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
+            }
+        } else {
+            // It's a regular farmer listing
+            const listing = listings.find(l => l.id === acceptedBid.listingId || (l.crop === acceptedBid.crop && l.farmerName === acceptedBid.farmerName));
+            if (listing) {
+                const newQty = Number(listing.quantity) - Number(acceptedBid.quantity);
+                const finalStatus = newQty <= 0 ? 'Sold Out' : 'Active';
+                setListings(listings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
+                await supabase.from('listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
+            }
+        }
       }
     }
+    
+    // Broadcast this status change!
+    if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
   };
 
   return (

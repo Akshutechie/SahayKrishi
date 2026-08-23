@@ -382,7 +382,15 @@ export default function BuyerDashboard() {
             <form onSubmit={handlePostDemand}>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Required Crop</label>
-                <input type="text" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newDemand.crop} onChange={e => setNewDemand({...newDemand, crop: e.target.value})} required />
+                <select style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }} value={newDemand.crop} onChange={e => setNewDemand({...newDemand, crop: e.target.value})} required>
+                  <option value="" disabled>Select a Crop</option>
+                  <option value="Onion">Onion</option>
+                  <option value="Tomato">Tomato</option>
+                  <option value="Potato">Potato</option>
+                  <option value="Rice">Rice</option>
+                  <option value="Wheat">Wheat</option>
+                  <option value="Cotton">Cotton</option>
+                </select>
               </div>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Total Quantity Needed (kg)</label>

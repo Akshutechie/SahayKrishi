@@ -25,7 +25,7 @@ export default function FPODashboard() {
   const [isDemandModalOpen, setIsDemandModalOpen] = useState(false);
   
   // Form State
-  const [newBulk, setNewBulk] = useState({ crop: '', quantity: '', contributorIds: [], price: '' });
+  const [newBulk, setNewBulk] = useState({ crop: '', quantity: '', contributors: '', price: '' });
   const [newDemand, setNewDemand] = useState({ buyerId: '', crop: '', quantity: '', price: '' });
   const [newFarmer, setNewFarmer] = useState({ name: '', location: '', phone: '' });
   const [newBuyer, setNewBuyer] = useState({ name: '', type: 'APEDA Exporter', location: '' });
@@ -62,20 +62,23 @@ export default function FPODashboard() {
   };
   const handleCreateBulkListing = (e) => {
     e.preventDefault();
-    if (!newBulk.crop || !newBulk.quantity || newBulk.contributorIds.length === 0 || !newBulk.price) return;
+    if (!newBulk.crop || !newBulk.quantity || !newBulk.contributors || !newBulk.price) return;
     
+    const numFarmers = Math.min(Number(newBulk.contributors), farmers.length);
+    const selectedFarmers = farmers.slice(0, numFarmers).map(f => f.id);
+
     addBulkListing({
       id: `BLK00${Math.random().toString(36).substr(2, 6)}`,
       crop: newBulk.crop,
       quantity: newBulk.quantity,
-      contributors: newBulk.contributorIds.length,
-      contributor_ids: newBulk.contributorIds.join(','),
+      contributors: numFarmers,
+      contributor_ids: selectedFarmers.join(','),
       original_quantity: newBulk.quantity,
       price: newBulk.price,
       status: 'Awaiting Bids'
     });
     
-    setNewBulk({ crop: '', quantity: '', contributorIds: [], price: '' });
+    setNewBulk({ crop: '', quantity: '', contributors: '', price: '' });
     setIsBulkModalOpen(false);
     alert('Bulk listing successfully created and posted to APEDA Exporters!');
   };
@@ -519,29 +522,23 @@ export default function FPODashboard() {
             <form onSubmit={handleCreateBulkListing}>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Crop Name & Grade</label>
-                <input type="text" placeholder="e.g., Onion (Grade A)" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newBulk.crop} onChange={e => setNewBulk({...newBulk, crop: e.target.value})} required />
+                <select style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }} value={newBulk.crop} onChange={e => setNewBulk({...newBulk, crop: e.target.value})} required>
+                    <option value="" disabled>Select a Crop</option>
+                    <option value="Onion">Onion</option>
+                    <option value="Tomato">Tomato</option>
+                    <option value="Potato">Potato</option>
+                    <option value="Rice">Rice</option>
+                    <option value="Wheat">Wheat</option>
+                    <option value="Cotton">Cotton</option>
+                  </select>
               </div>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Total Aggregated Quantity (kg)</label>
                 <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newBulk.quantity} onChange={e => setNewBulk({...newBulk, quantity: e.target.value})} required />
               </div>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Select Contributing Farmers</label>
-                <div style={{ maxHeight: '120px', overflowY: 'auto', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.5rem' }}>
-                  {farmers.map(farmer => (
-                    <label key={farmer.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={newBulk.contributorIds.includes(farmer.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) setNewBulk({...newBulk, contributorIds: [...newBulk.contributorIds, farmer.id]});
-                          else setNewBulk({...newBulk, contributorIds: newBulk.contributorIds.filter(id => id !== farmer.id)});
-                        }}
-                      />
-                      {farmer.name} ({farmer.location})
-                    </label>
-                  ))}
-                </div>
+                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Number of Contributing Farmers</label>
+                <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newBulk.contributors} onChange={e => setNewBulk({...newBulk, contributors: e.target.value})} min="1" max={farmers.length} required />
               </div>
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Asking Price (₹/kg)</label>
@@ -574,7 +571,15 @@ export default function FPODashboard() {
               </div>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Required Crop</label>
-                <input type="text" placeholder="e.g., Soybean" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newDemand.crop} onChange={e => setNewDemand({...newDemand, crop: e.target.value})} required />
+                <select style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }} value={newDemand.crop} onChange={e => setNewDemand({...newDemand, crop: e.target.value})} required>
+                    <option value="" disabled>Select a Crop</option>
+                    <option value="Onion">Onion</option>
+                    <option value="Tomato">Tomato</option>
+                    <option value="Potato">Potato</option>
+                    <option value="Rice">Rice</option>
+                    <option value="Wheat">Wheat</option>
+                    <option value="Cotton">Cotton</option>
+                  </select>
               </div>
               <div className="stack-mobile" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ flex: 1 }}>
