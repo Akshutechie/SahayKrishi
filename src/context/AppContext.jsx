@@ -175,6 +175,17 @@ export function AppProvider({ children }) {
 
   const addBid = async (newBid) => {
     setBids([...bids, newBid]);
+    
+    // If it's a Direct Sale (no listingId), reserve inventory immediately
+    if (!newBid.listingId && newBid.inventoryId) {
+        const invItem = inventory.find(i => i.id === newBid.inventoryId);
+        if (invItem) {
+            const newQty = Number(invItem.quantity) - Number(newBid.quantity);
+            setInventory(inventory.map(i => i.id === newBid.inventoryId ? { ...i, quantity: newQty } : i));
+            await supabase.from('inventory').update({ quantity: newQty }).eq('id', newBid.inventoryId);
+        }
+    }
+
     await supabase.from('bids').insert([newBid]);
     if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
   };
@@ -244,41 +255,32 @@ export function AppProvider({ children }) {
 
   
   const updateBidStatus = async (bidId, newStatus) => {
+    const targetBid = bids.find(b => b.id === bidId);
+    
     if (newStatus === 'Accepted (Sold)') {
-      const acceptedBid = bids.find(b => b.id === bidId);
-      if (acceptedBid) {
-        const listing = listings.find(l => l.id === acceptedBid.listingId || (l.crop === acceptedBid.crop && l.farmerName === acceptedBid.farmerName));
+      if (targetBid) {
+        const listing = listings.find(l => l.id === targetBid.listingId || (l.crop === targetBid.crop && l.farmerName === targetBid.farmerName));
         
-        let targetInventoryId = acceptedBid.inventoryId || (listing ? listing.inventoryId : null);
-
-        // 1. First validate if we have enough inventory
-        if (targetInventoryId) {
-            const invItem = inventory.find(i => i.id === targetInventoryId);
-            if (invItem && Number(acceptedBid.quantity) > Number(invItem.quantity)) {
-                return { success: false, message: `Insufficient Warehouse Inventory! The buyer requested ${acceptedBid.quantity}kg but you only have ${invItem.quantity}kg in the warehouse.` };
-            }
-        }
-
-        // 2. Validate listing quantity if it exists
+        // Validate listing quantity if it exists
         if (listing) {
-            if (Number(acceptedBid.quantity) > Number(listing.quantity)) {
-                return { success: false, message: `Insufficient Listing Quantity! The buyer requested ${acceptedBid.quantity}kg but you only have ${listing.quantity}kg remaining in this listing.` };
+            if (Number(targetBid.quantity) > Number(listing.quantity)) {
+                return { success: false, message: `Insufficient Listing Quantity! The buyer requested ${targetBid.quantity}kg but you only have ${listing.quantity}kg remaining in this listing.` };
             }
-            const newQty = Number(listing.quantity) - Number(acceptedBid.quantity);
+            const newQty = Number(listing.quantity) - Number(targetBid.quantity);
             const finalStatus = newQty <= 0 ? 'Sold Out' : 'Active';
             setListings(listings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
             await supabase.from('listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
         }
-
-        // 3. Decrement underlying inventory ONLY IF it was a direct sale (no listing)
-        if (!listing && targetInventoryId) {
-            const invItem = inventory.find(i => i.id === targetInventoryId);
-            if (invItem) {
-                const newInvQty = Number(invItem.quantity) - Number(acceptedBid.quantity);
-                setInventory(inventory.map(i => i.id === targetInventoryId ? { ...i, quantity: newInvQty } : i));
-                await supabase.from('inventory').update({ quantity: newInvQty }).eq('id', targetInventoryId);
-            }
-        }
+      }
+    } else if (newStatus === 'Rejected') {
+      // If a Direct Sale is rejected, refund the reserved inventory
+      if (targetBid && !targetBid.listingId && targetBid.inventoryId) {
+          const invItem = inventory.find(i => i.id === targetBid.inventoryId);
+          if (invItem) {
+              const newQty = Number(invItem.quantity) + Number(targetBid.quantity);
+              setInventory(inventory.map(i => i.id === targetBid.inventoryId ? { ...i, quantity: newQty } : i));
+              await supabase.from('inventory').update({ quantity: newQty }).eq('id', targetBid.inventoryId);
+          }
       }
     }
     
