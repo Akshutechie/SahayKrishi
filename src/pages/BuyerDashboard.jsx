@@ -63,6 +63,25 @@ export default function BuyerDashboard() {
     logout();
     navigate('/');
   };
+  const getMarketPulse = (cropName) => {
+    if (!cropName) return null;
+    const safeCrop = cropName.toLowerCase();
+    const activeListings = listings.filter(l => l.crop.toLowerCase() === safeCrop && l.status === 'Active');
+    const activeBulk = bulkListings.filter(b => b.crop.toLowerCase() === safeCrop && b.status === 'Awaiting Bids');
+    
+    const totalQty = activeListings.reduce((sum, l) => sum + (Number(l.quantity) || 0), 0) + 
+                     activeBulk.reduce((sum, b) => sum + (Number(b.quantity) || 0), 0);
+                     
+    if (totalQty === 0) return { qty: 0, avgPrice: 0 };
+    
+    const sumPrice = activeListings.reduce((sum, l) => sum + ((Number(l.price) || 0) * (Number(l.quantity) || 0)), 0) + 
+                     activeBulk.reduce((sum, b) => sum + ((Number(b.price) || 0) * (Number(b.quantity) || 0)), 0);
+    const avgPrice = Math.round(sumPrice / totalQty);
+    
+    return { qty: totalQty, avgPrice };
+  };
+  const pulse = getMarketPulse(newDemand.crop);
+
   const handlePostDemand = (e) => {
     e.preventDefault();
     if (!newDemand.crop || !newDemand.quantity || !newDemand.targetPrice) return;
@@ -392,6 +411,13 @@ export default function BuyerDashboard() {
                   <option value="Cotton">Cotton</option>
                 </select>
               </div>
+
+                {pulse && newDemand.crop && (
+                  <div style={{ padding: '0.75rem', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1.2rem' }}>💡</span> 
+                    <span><strong>Market Pulse:</strong> There is currently <strong>{pulse.qty.toLocaleString()}kg</strong> of {newDemand.crop} available across the network at an average asking price of <strong>₹{pulse.avgPrice}/kg</strong>.</span>
+                  </div>
+                )}
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem' }}>Total Quantity Needed (kg)</label>
                 <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newDemand.quantity} onChange={e => setNewDemand({...newDemand, quantity: e.target.value})} required />
