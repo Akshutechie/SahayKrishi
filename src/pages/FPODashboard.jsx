@@ -228,7 +228,10 @@ export default function FPODashboard() {
                     <td style={{ padding: '1rem' }}>
                       {bid.farmerId === 'FPO' && bid.status === 'Pending' ? (
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button className="btn" style={{ background: '#16a34a', color: 'white', padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={() => updateBidStatus(bid.id, 'Accepted (Sold)')}>Accept</button>
+                          <button className="btn" style={{ background: '#16a34a', color: 'white', padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={async () => {
+                            const res = await updateBidStatus(bid.id, 'Accepted (Sold)');
+                            if (res && !res.success) alert(res.message);
+                          }}>Accept</button>
                           <button className="btn" style={{ background: '#dc2626', color: 'white', padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={() => updateBidStatus(bid.id, 'Rejected')}>Reject</button>
                         </div>
                       ) : (

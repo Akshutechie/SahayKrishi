@@ -297,9 +297,13 @@ export default function FarmerDashboard() {
     setIsAcceptBidModalOpen(true);
   };
 
-  const confirmAcceptBid = () => {
+  const confirmAcceptBid = async () => {
     if (selectedBid) {
-      updateBidStatus(selectedBid.id, 'Accepted (Sold)');
+      const res = await updateBidStatus(selectedBid.id, 'Accepted (Sold)');
+      if (res && !res.success) {
+        alert(res.message);
+        return; // Keep modal open or just stop
+      }
     }
     setIsAcceptBidModalOpen(false);
     setSelectedBid(null);

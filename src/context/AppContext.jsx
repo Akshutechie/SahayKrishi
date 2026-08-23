@@ -207,14 +207,14 @@ export function AppProvider({ children }) {
 
   
   const updateBidStatus = async (bidId, newStatus) => {
-    setBids(bids.map(bid => bid.id === bidId ? { ...bid, status: newStatus } : bid));
-    await supabase.from('bids').update({ status: newStatus }).eq('id', bidId);
-    
     if (newStatus === 'Accepted (Sold)') {
       const acceptedBid = bids.find(b => b.id === bidId);
       if (acceptedBid) {
         const listing = listings.find(l => l.id === acceptedBid.listingId || (l.crop === acceptedBid.crop && l.farmerName === acceptedBid.farmerName));
         if (listing) {
+            if (Number(acceptedBid.quantity) > Number(listing.quantity)) {
+                return { success: false, message: `Insufficient Inventory! The buyer requested ${acceptedBid.quantity}kg but you only have ${listing.quantity}kg remaining.` };
+            }
             const newQty = Number(listing.quantity) - Number(acceptedBid.quantity);
             const finalStatus = newQty <= 0 ? 'Sold Out' : 'Active';
             setListings(listings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
@@ -223,7 +223,11 @@ export function AppProvider({ children }) {
       }
     }
     
+    setBids(bids.map(bid => bid.id === bidId ? { ...bid, status: newStatus } : bid));
+    await supabase.from('bids').update({ status: newStatus }).eq('id', bidId);
+    
     if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
+    return { success: true };
   };
 
   return (
