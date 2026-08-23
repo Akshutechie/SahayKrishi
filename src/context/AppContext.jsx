@@ -225,6 +225,18 @@ export function AppProvider({ children }) {
       const acceptedBid = bids.find(b => b.id === bidId);
       if (acceptedBid) {
         const listing = listings.find(l => l.id === acceptedBid.listingId || (l.crop === acceptedBid.crop && l.farmerName === acceptedBid.farmerName));
+        
+        let targetInventoryId = acceptedBid.inventoryId || (listing ? listing.inventoryId : null);
+
+        // 1. First validate if we have enough inventory
+        if (targetInventoryId) {
+            const invItem = inventory.find(i => i.id === targetInventoryId);
+            if (invItem && Number(acceptedBid.quantity) > Number(invItem.quantity)) {
+                return { success: false, message: `Insufficient Warehouse Inventory! The buyer requested ${acceptedBid.quantity}kg but you only have ${invItem.quantity}kg in the warehouse.` };
+            }
+        }
+
+        // 2. Validate listing quantity if it exists
         if (listing) {
             if (Number(acceptedBid.quantity) > Number(listing.quantity)) {
                 return { success: false, message: `Insufficient Listing Quantity! The buyer requested ${acceptedBid.quantity}kg but you only have ${listing.quantity}kg remaining in this listing.` };
@@ -233,15 +245,15 @@ export function AppProvider({ children }) {
             const finalStatus = newQty <= 0 ? 'Sold Out' : 'Active';
             setListings(listings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
             await supabase.from('listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
+        }
 
-            // Also decrement underlying inventory if linked
-            if (listing.inventoryId) {
-                const invItem = inventory.find(i => i.id === listing.inventoryId);
-                if (invItem) {
-                    const newInvQty = Number(invItem.quantity) - Number(acceptedBid.quantity);
-                    setInventory(inventory.map(i => i.id === listing.inventoryId ? { ...i, quantity: newInvQty } : i));
-                    await supabase.from('inventory').update({ quantity: newInvQty }).eq('id', listing.inventoryId);
-                }
+        // 3. Decrement underlying inventory
+        if (targetInventoryId) {
+            const invItem = inventory.find(i => i.id === targetInventoryId);
+            if (invItem) {
+                const newInvQty = Number(invItem.quantity) - Number(acceptedBid.quantity);
+                setInventory(inventory.map(i => i.id === targetInventoryId ? { ...i, quantity: newInvQty } : i));
+                await supabase.from('inventory').update({ quantity: newInvQty }).eq('id', targetInventoryId);
             }
         }
       }

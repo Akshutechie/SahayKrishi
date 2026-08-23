@@ -290,6 +290,7 @@ export default function FarmerDashboard() {
     
     addListing({
       id: `L00${Math.random().toString(36).substr(2, 6)}`, 
+      inventoryId: newListing.inventoryId,
       crop: newListing.crop, 
       quantity: newListing.quantity, 
       price: newListing.price, 
