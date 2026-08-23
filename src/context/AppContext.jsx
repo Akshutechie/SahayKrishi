@@ -278,6 +278,14 @@ export function AppProvider({ children }) {
             setListings(listings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
             await supabase.from('listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
         }
+        
+        // Decrement Buyer's Global Demand
+        const buyerObj = buyers.find(b => b.name === targetBid.buyer);
+        if (buyerObj && buyerObj.quantityRequired) {
+            const newDemandQty = Math.max(0, Number(buyerObj.quantityRequired) - Number(targetBid.quantity));
+            setBuyers(buyers.map(b => b.id === buyerObj.id ? { ...b, quantityRequired: newDemandQty } : b));
+            await supabase.from('buyers').update({ quantityRequired: newDemandQty }).eq('id', buyerObj.id);
+        }
       }
     } else if (newStatus === 'Rejected') {
       // If a Direct Sale is rejected, refund the reserved inventory
