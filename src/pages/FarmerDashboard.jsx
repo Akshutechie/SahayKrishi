@@ -11,7 +11,18 @@ export default function FarmerDashboard() {
   const navigate = useNavigate();
   const { inventory, addInventory, removeInventory, listings, bids, buyers, addListing, addBid, updateBidStatus, removeBuyerDemand, removeListing, currentUser, logout, updateFarmerCrops } = useAppContext();
 
-  // --- NEW INVENTORY LOGIC: Calculate Pending and Available Quantities ---
+  
+  // --- NEW DEMAND LOGIC: Calculate Pending Buyer Demand ---
+  const getComputedDemand = (buyer) => {
+      let pendingQty = 0;
+      bids.forEach(b => {
+          if (b.status === 'Action Required (Buyer)' && b.buyer === buyer.name && b.crop === buyer.requiredCrop) {
+              pendingQty += Number(b.quantity);
+          }
+      });
+      return Math.max(0, Number(buyer.quantityRequired || 0) - pendingQty);
+  };
+\n  // --- NEW INVENTORY LOGIC: Calculate Pending and Available Quantities ---
   const getInventoryStats = (invId) => {
       let pendingQty = 0;
       

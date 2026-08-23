@@ -7,6 +7,23 @@ import { useLanguage } from '../context/LanguageContext';
 export default function BuyerDashboard() {
   const navigate = useNavigate();
   const { listings, bulkListings, farmers, bids, buyers, addBuyerDemand, addBid, updateBidStatus, currentUser, logout } = useAppContext();
+
+  // --- NEW DEMAND LOGIC: Calculate Pending and Available Quantities ---
+  const getDemandStats = (demand) => {
+      let pendingQty = 0;
+      
+      bids.forEach(b => {
+          if (b.status === 'Action Required (Buyer)' && b.buyer === demand.name && b.crop === demand.requiredCrop) {
+              pendingQty += Number(b.quantity);
+          }
+      });
+      
+      return {
+          total: Number(demand.quantityRequired || 0),
+          pending: pendingQty,
+          stillNeeded: Math.max(0, Number(demand.quantityRequired || 0) - pendingQty)
+      };
+  };
   const { t } = useLanguage();
 
   // Protect the route
@@ -214,31 +231,37 @@ export default function BuyerDashboard() {
       <h2 style={{ marginBottom: '1rem', color: 'var(--buyer-dark)' }}>My Active Demands</h2>
       <div className="glass-card table-responsive" style={{ padding: '0', marginBottom: '2rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ background: 'var(--buyer-light)', borderBottom: '1px solid #bfdbfe', color: 'var(--buyer-dark)' }}>
-              <th style={{ padding: '1rem' }}>{t('crop')}</th>
-              <th style={{ padding: '1rem' }}>Quantity Needed</th>
-              <th style={{ padding: '1rem' }}>Target Price</th>
-              <th style={{ padding: '1rem' }}>{t('status')}</th>
-                <th style={{ padding: '1rem' }}>Action</th>
-              </tr>
-          </thead>
-          <tbody>
-            {myDemands.map(demand => (
-                <tr key={demand.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                  <td style={{ padding: '1rem', fontWeight: '500' }}>{demand.requiredCrop}</td>
-                  <td style={{ padding: '1rem' }}>{demand.quantityRequired} kg</td>
-                  <td style={{ padding: '1rem' }}>₹{demand.targetPrice} / kg</td>
-                  <td style={{ padding: '1rem', color: 'var(--buyer-primary)' }}>Active</td>
-                  <td style={{ padding: '1rem' }}>
-                    <button className="btn" style={{ background: '#ef4444', color: 'white', padding: '0.25rem 0.5rem', fontSize: '0.85rem' }} onClick={() => removeBuyerDemand(demand.id)}>Remove</button>
-                  </td>
+            <thead>
+              <tr style={{ background: 'var(--buyer-light)', borderBottom: '1px solid #bfdbfe', color: 'var(--buyer-dark)' }}>
+                <th style={{ padding: '1rem' }}>{t('crop')}</th>
+                <th style={{ padding: '1rem' }}>Total Requested</th>
+                <th style={{ padding: '1rem', color: '#f59e0b' }}>Pending Offers</th>
+                <th style={{ padding: '1rem', color: '#16a34a' }}>Still Needed</th>
+                <th style={{ padding: '1rem' }}>Target Price</th>
+                <th style={{ padding: '1rem' }}>{t('status')}</th>
+                  <th style={{ padding: '1rem' }}>Action</th>
                 </tr>
-              ))}
-              {myDemands.length === 0 && (
-                <tr><td colSpan="5" style={{ padding: '1rem', textAlign: 'center' }}>You have not posted any demands.</td></tr>
-            )}
-          </tbody>
+            </thead>
+            <tbody>
+              {myDemands.map(demand => {
+                  const stats = getDemandStats(demand);
+                  return (
+                  <tr key={demand.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '1rem', fontWeight: '500' }}>{demand.requiredCrop}</td>
+                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>{stats.total} kg</td>
+                    <td style={{ padding: '1rem', color: '#f59e0b', fontWeight: 'bold' }}>{stats.pending} kg</td>
+                    <td style={{ padding: '1rem', color: '#16a34a', fontWeight: 'bold' }}>{stats.stillNeeded} kg</td>
+                    <td style={{ padding: '1rem' }}>₹{demand.targetPrice} / kg</td>
+                    <td style={{ padding: '1rem', color: 'var(--buyer-primary)' }}>Active</td>
+                    <td style={{ padding: '1rem' }}>
+                      <button className="btn" style={{ background: '#ef4444', color: 'white', padding: '0.25rem 0.5rem', fontSize: '0.85rem' }} onClick={() => removeBuyerDemand(demand.id)}>Remove</button>
+                    </td>
+                  </tr>
+                )})}
+                {myDemands.length === 0 && (
+                  <tr><td colSpan="7" style={{ padding: '1rem', textAlign: 'center' }}>You have not posted any demands.</td></tr>
+              )}
+            </tbody>
         </table>
       </div>
 
