@@ -142,10 +142,33 @@ export function AppProvider({ children }) {
   const addListing = async (newListing) => {
     setListings([...listings, newListing]); // Optimistic UI
     await supabase.from('listings').insert([newListing]);
+    
+    // Deduct from inventory immediately upon listing
+    if (newListing.inventoryId) {
+        const invItem = inventory.find(i => i.id === newListing.inventoryId);
+        if (invItem) {
+            const newQty = Number(invItem.quantity) - Number(newListing.quantity);
+            setInventory(inventory.map(i => i.id === newListing.inventoryId ? { ...i, quantity: newQty } : i));
+            await supabase.from('inventory').update({ quantity: newQty }).eq('id', newListing.inventoryId);
+        }
+    }
+
     if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
   };
 
   const removeListing = async (listingId) => {
+    const listing = listings.find(l => l.id === listingId);
+    
+    // Add back to inventory if the listing is removed without being fully sold
+    if (listing && listing.inventoryId) {
+        const invItem = inventory.find(i => i.id === listing.inventoryId);
+        if (invItem) {
+            const newQty = Number(invItem.quantity) + Number(listing.quantity);
+            setInventory(inventory.map(i => i.id === listing.inventoryId ? { ...i, quantity: newQty } : i));
+            await supabase.from('inventory').update({ quantity: newQty }).eq('id', listing.inventoryId);
+        }
+    }
+
     setListings(listings.filter(l => l.id !== listingId));
     await supabase.from('listings').delete().eq('id', listingId);
   };
@@ -247,8 +270,8 @@ export function AppProvider({ children }) {
             await supabase.from('listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
         }
 
-        // 3. Decrement underlying inventory
-        if (targetInventoryId) {
+        // 3. Decrement underlying inventory ONLY IF it was a direct sale (no listing)
+        if (!listing && targetInventoryId) {
             const invItem = inventory.find(i => i.id === targetInventoryId);
             if (invItem) {
                 const newInvQty = Number(invItem.quantity) - Number(acceptedBid.quantity);
