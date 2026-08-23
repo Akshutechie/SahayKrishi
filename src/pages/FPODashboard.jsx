@@ -93,17 +93,7 @@ export default function FPODashboard() {
         >
           <Activity size={20} /> {t('directories')}
         </button>
-        <button 
-          onClick={() => setActiveTab('market')}
-          style={{ 
-            background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', fontWeight: 'bold',
-            color: activeTab === 'market' ? '#16a34a' : 'var(--text-secondary)',
-            borderBottom: activeTab === 'market' ? '3px solid #16a34a' : 'none',
-            paddingBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem'
-          }}
-        >
-          <ShoppingCart size={20} /> {t('live_market_fpo')}
-        </button>
+        
         <button 
           onClick={() => setActiveTab('transactions')}
           style={{ 
@@ -142,13 +132,13 @@ export default function FPODashboard() {
         </>
       )}
 
-      {/* =========================================
-          TAB 2: LIVE MARKET
-          ========================================= */}
-      {activeTab === 'market' && (
-        <>
-          
+      
 
+      {/* =========================================
+          TAB 3: CONTRACTS & TRANSACTIONS
+          ========================================= */}
+      {activeTab === 'transactions' && (
+        <>
           <h2 style={{ marginBottom: '1rem', color: '#16a34a' }}>Global Farmer Listings</h2>
           <div className="glass-card table-responsive" style={{ padding: '0', marginBottom: '2rem' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
@@ -181,14 +171,8 @@ export default function FPODashboard() {
               </tbody>
             </table>
           </div>
-        </>
-      )}
 
-      {/* =========================================
-          TAB 3: CONTRACTS & TRANSACTIONS
-          ========================================= */}
-      {activeTab === 'transactions' && (
-        <>
+
           <h2 style={{ marginBottom: '1rem', color: '#16a34a' }}>Completed Sales (Platform GMV)</h2>
           <div className="glass-card table-responsive" style={{ padding: '0', marginBottom: '2rem' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
