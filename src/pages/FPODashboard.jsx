@@ -7,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 export default function FPODashboard() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { currentUser, farmers, buyers, bulkListings, addBulkListing, listings, bids, updateBidStatus, addBuyerDemand, addFarmer, deleteFarmer, addBuyer, deleteBuyer, toggleBlockFarmer, toggleBlockBuyer } = useAppContext();
+  const { currentUser, farmers, buyers, listings, bids, updateBidStatus, addBuyerDemand, addFarmer, deleteFarmer, addBuyer, deleteBuyer, toggleBlockFarmer, toggleBlockBuyer } = useAppContext();
   
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'fpo') {
@@ -145,59 +145,10 @@ export default function FPODashboard() {
       {activeTab === 'overview' && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-            <div className="glass-card flex-center" style={{ flexDirection: 'column', gap: '1rem', border: '1px solid var(--fpo-light)' }}>
-              <Users size={32} color="var(--fpo-primary)" />
-              <h3 style={{ margin: 0 }}>{t('farmer_directory')}</h3>
-              <p style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Manage profiles for {farmers.length} offline farmers in your network.</p>
-              <button className="btn btn-fpo" style={{ width: '100%' }} onClick={() => setShowDirectory(true)}>View Members</button>
-            </div>
-
-            <div className="glass-card flex-center" style={{ flexDirection: 'column', gap: '1rem', border: '1px solid var(--fpo-light)' }}>
-              <Building2 size={32} color="#0ea5e9" />
-              <h3 style={{ margin: 0 }}>{t('buyer_directory')}</h3>
-              <p style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>View {buyers.length} verified APEDA exporters and buyers.</p>
-              <button className="btn" style={{ width: '100%', background: '#0284c7', color: 'white' }} onClick={() => setShowBuyerDirectory(true)}>View Buyers</button>
-            </div>
-
-            <div className="glass-card flex-center" style={{ flexDirection: 'column', gap: '1rem', border: '1px solid var(--fpo-light)' }}>
-              <PackagePlus size={32} color="var(--fpo-primary)" />
-              <h3 style={{ margin: 0 }}>{t('bulk_aggregator')}</h3>
-              <p style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Pool small yields together to attract APEDA Exporters.</p>
-              <button className="btn btn-fpo" style={{ width: '100%', background: 'var(--fpo-dark)' }} onClick={() => setIsBulkModalOpen(true)}>Create Bulk Listing</button>
-            </div>
+            
           </div>
 
-          <h2 style={{ marginBottom: '1rem' }}>{t('active_bulk')} (Waiting for Buyers)</h2>
-          <div className="glass-card table-responsive" style={{ padding: '0', marginBottom: '2rem' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-              <thead>
-                <tr style={{ background: 'var(--fpo-light)', borderBottom: '1px solid #d8b4fe', color: 'var(--fpo-dark)' }}>
-                  <th style={{ padding: '1rem' }}>{t('crop')}</th>
-                  <th style={{ padding: '1rem' }}>Aggregated Qty</th>
-                  <th style={{ padding: '1rem' }}>Contributing Farmers</th>
-                  <th style={{ padding: '1rem' }}>{t('status')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bulkListings.map(listing => (
-                  <tr key={listing.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={{ padding: '1rem', fontWeight: '500' }}>{listing.crop}</td>
-                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>{listing.quantity} kg</td>
-                    <td style={{ padding: '1rem', color: '#16a34a', fontWeight: '600' }}>₹{listing.price} / kg</td>
-                    <td style={{ padding: '1rem' }}>{listing.contributors} Farmers</td>
-                    <td style={{ padding: '1rem' }}>
-                      <span style={{ padding: '0.25rem 0.75rem', background: '#fef3c7', color: '#b45309', borderRadius: '999px', fontSize: '0.85rem', fontWeight: '600' }}>
-                        {listing.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {bulkListings.length === 0 && (
-                  <tr><td colSpan="5" style={{ padding: '1rem', textAlign: 'center' }}>No bulk listings active.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          
         </>
       )}
 
@@ -486,45 +437,6 @@ export default function FPODashboard() {
                 </tbody>
               </table>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create Bulk Listing Modal */}
-      {isBulkModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsBulkModalOpen(false)}>
-          <div className="modal-content" style={{ maxWidth: '500px' }} onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1.5rem', color: 'var(--fpo-dark)' }}>Create Bulk Listing</h2>
-            <form onSubmit={handleCreateBulkListing}>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Crop Name & Grade</label>
-                <select style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff' }} value={newBulk.crop} onChange={e => setNewBulk({...newBulk, crop: e.target.value})} required>
-                    <option value="" disabled>Select a Crop</option>
-                    <option value="Onion">Onion</option>
-                    <option value="Tomato">Tomato</option>
-                    <option value="Potato">Potato</option>
-                    <option value="Rice">Rice</option>
-                    <option value="Wheat">Wheat</option>
-                    <option value="Cotton">Cotton</option>
-                  </select>
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Total Aggregated Quantity (kg)</label>
-                <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newBulk.quantity} onChange={e => setNewBulk({...newBulk, quantity: e.target.value})} required />
-              </div>
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Number of Contributing Farmers</label>
-                <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newBulk.contributors} onChange={e => setNewBulk({...newBulk, contributors: e.target.value})} min="1" max={farmers.length} required />
-              </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Asking Price (₹/kg)</label>
-                <input type="number" placeholder="e.g. 35" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newBulk.price} onChange={e => setNewBulk({...newBulk, price: e.target.value})} required />
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button type="button" className="btn" onClick={() => setIsBulkModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-fpo">Post Bulk Listing</button>
-              </div>
-            </form>
           </div>
         </div>
       )}
