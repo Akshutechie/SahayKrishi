@@ -6,7 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 
 export default function BuyerDashboard() {
   const navigate = useNavigate();
-  const { listings, bulkListings, farmers, bids, buyers, addBuyerDemand, addBid, currentUser, logout } = useAppContext();
+  const { listings, bulkListings, farmers, bids, buyers, addBuyerDemand, addBid, updateBidStatus, currentUser, logout } = useAppContext();
   const { t } = useLanguage();
 
   // Protect the route
@@ -220,7 +220,8 @@ export default function BuyerDashboard() {
               <th style={{ padding: '1rem' }}>Quantity Needed</th>
               <th style={{ padding: '1rem' }}>Target Price</th>
               <th style={{ padding: '1rem' }}>{t('status')}</th>
-            </tr>
+                <th style={{ padding: '1rem' }}>Action</th>
+              </tr>
           </thead>
           <tbody>
             {myDemands.map(demand => (
@@ -248,7 +249,8 @@ export default function BuyerDashboard() {
               <th style={{ padding: '1rem' }}>{t('crop')}</th>
               <th style={{ padding: '1rem' }}>Bid Amount</th>
               <th style={{ padding: '1rem' }}>{t('status')}</th>
-            </tr>
+                <th style={{ padding: '1rem' }}>Action</th>
+              </tr>
           </thead>
           <tbody>
             {mySentBids.map(bid => (
@@ -257,18 +259,26 @@ export default function BuyerDashboard() {
                 <td style={{ padding: '1rem' }}>{bid.quantity}kg {bid.crop}</td>
                 <td style={{ padding: '1rem', color: 'var(--buyer-primary)', fontWeight: 'bold' }}>₹{bid.bidPrice} / kg</td>
                 <td style={{ padding: '1rem' }}>
-                  <span style={{ 
-                    padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.85rem', fontWeight: '600',
-                    background: bid.status === 'Pending' ? '#fef08a' : bid.status.includes('Accepted') ? '#bbf7d0' : '#fecaca',
-                    color: bid.status === 'Pending' ? '#854d0e' : bid.status.includes('Accepted') ? '#166534' : '#991b1b'
-                  }}>
-                    {bid.status}
-                  </span>
-                </td>
+                    <span style={{ 
+                      padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.85rem', fontWeight: '600',
+                      background: bid.status.includes('Action') || bid.status === 'Pending' ? '#fef08a' : bid.status.includes('Accepted') ? '#bbf7d0' : '#fecaca',
+                      color: bid.status.includes('Action') || bid.status === 'Pending' ? '#854d0e' : bid.status.includes('Accepted') ? '#166534' : '#991b1b'
+                    }}>
+                      {bid.status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    {bid.status === 'Action Required (Buyer)' && (
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button className="btn" style={{ background: '#16a34a', color: 'white', padding: '0.25rem 0.5rem', fontSize: '0.85rem' }} onClick={() => updateBidStatus(bid.id, 'Accepted (Sold)')}>Accept</button>
+                        <button className="btn" style={{ background: '#ef4444', color: 'white', padding: '0.25rem 0.5rem', fontSize: '0.85rem' }} onClick={() => updateBidStatus(bid.id, 'Rejected')}>Reject</button>
+                      </div>
+                    )}
+                  </td>
               </tr>
             ))}
             {mySentBids.length === 0 && (
-              <tr><td colSpan="4" style={{ padding: '1rem', textAlign: 'center' }}>No bids sent yet.</td></tr>
+              <tr><td colSpan="5" style={{ padding: '1rem', textAlign: 'center' }}>No bids sent yet.</td></tr>
             )}
           </tbody>
         </table>

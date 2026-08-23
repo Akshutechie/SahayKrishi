@@ -126,6 +126,7 @@ export default function FarmerDashboard() {
   // Modal States
   const [isListingModalOpen, setIsListingModalOpen] = useState(false);
   const [isSellDirectModalOpen, setIsSellDirectModalOpen] = useState(false);
+  const [sellQuantity, setSellQuantity] = useState(100);
   const [isAcceptBidModalOpen, setIsAcceptBidModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   
@@ -313,8 +314,9 @@ export default function FarmerDashboard() {
     updateBidStatus(bidId, 'Rejected');
   };
 
-  const handleSellDirect = (exporter) => {
+    const handleSellDirect = (exporter) => {
     setSelectedExporter(exporter);
+    setSellQuantity(exporter.quantity || 100);
     setIsSellDirectModalOpen(true);
   };
 
@@ -324,19 +326,14 @@ export default function FarmerDashboard() {
       id: `B00${bids.length + 2}`,
       buyer: selectedExporter.name,
       crop: selectedExporter.crop,
-      quantity: 100, // Mocking a standard lot size since the farmer didn't specify quantity in this flow
+      quantity: sellQuantity,
       bidPrice: selectedExporter.price,
-      status: 'Accepted (Sold)',
+      status: 'Action Required (Buyer)',
       farmerName: currentUser.name,
       farmerId: currentUser.id
     });
 
-    // Remove the fulfilled demand from the market board
-    if (selectedExporter.id) {
-      removeBuyerDemand(selectedExporter.id);
-    }
-
-    alert(`Successfully sold ${selectedExporter.crop} to ${selectedExporter.name} at ₹${selectedExporter.price}/kg! The transaction has been recorded.`);
+    alert(`Successfully sent a counter-bid of ${sellQuantity}kg to ${selectedExporter.name} at ₹${selectedExporter.price}/kg! Waiting for buyer acceptance.`);
     setIsSellDirectModalOpen(false);
     setSelectedExporter(null);
   };
@@ -792,13 +789,22 @@ export default function FarmerDashboard() {
       {isSellDirectModalOpen && selectedExporter && (
         <div className="modal-overlay" onClick={() => setIsSellDirectModalOpen(false)}>
           <div className="modal-content" style={{ maxWidth: '500px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--farmer-dark)' }}>Confirm Direct Sale</h2>
-            <p style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>
-              Are you sure you want to instantly sell your <strong>{selectedExporter.crop}</strong> to <strong>{selectedExporter.name}</strong> for the APEDA guaranteed price of <strong>₹{selectedExporter.price}/kg</strong>?
+            <h2 style={{ marginBottom: '1rem', color: 'var(--farmer-dark)' }}>Propose Direct Sale</h2>
+            <p style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>
+              Propose a sale of your <strong>{selectedExporter.crop}</strong> to <strong>{selectedExporter.name}</strong> at the APEDA target price of <strong>₹{selectedExporter.price}/kg</strong>.
             </p>
+            <div style={{ marginBottom: '1.5rem', textAlign: 'left' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Quantity to Sell (kg):</label>
+              <input 
+                type="number" 
+                value={sellQuantity} 
+                onChange={(e) => setSellQuantity(e.target.value)}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+              />
+            </div>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
               <button className="btn" onClick={() => setIsSellDirectModalOpen(false)}>Cancel</button>
-              <button className="btn btn-farmer" onClick={confirmSellDirect}>Confirm Sale</button>
+              <button className="btn btn-farmer" onClick={confirmSellDirect}>Send Offer</button>
             </div>
           </div>
         </div>
