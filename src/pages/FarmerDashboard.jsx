@@ -9,7 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 export default function FarmerDashboard() {
   const navigate = useNavigate();
-  const { listings, bids, buyers, addListing, addBid, updateBidStatus, removeBuyerDemand, removeListing, currentUser, logout, updateFarmerCrops } = useAppContext();
+  const { inventory, addInventory, removeInventory, listings, bids, buyers, addListing, addBid, updateBidStatus, removeBuyerDemand, removeListing, currentUser, logout, updateFarmerCrops } = useAppContext();
   const { t, language } = useLanguage();
 
   const speakText = (text) => {
@@ -127,11 +127,14 @@ export default function FarmerDashboard() {
   const [isListingModalOpen, setIsListingModalOpen] = useState(false);
   const [isSellDirectModalOpen, setIsSellDirectModalOpen] = useState(false);
   const [sellQuantity, setSellQuantity] = useState(100);
+  const [sellInventoryId, setSellInventoryId] = useState('');
   const [isAcceptBidModalOpen, setIsAcceptBidModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   
   // Form/Selection State
-  const [newListing, setNewListing] = useState({ crop: '', quantity: '', price: '', grade: 'Grade A' });
+  const [newListing, setNewListing] = useState({ inventoryId: '', crop: '', quantity: '', price: '', grade: 'Grade A' });
+  const [newInventory, setNewInventory] = useState({ crop: '', grade: 'Grade A', quantity: '', harvestDate: '' });
+  const [isInventoryModalOpen, setIsInventoryModalOpen] = useState(false);
   const [selectedExporter, setSelectedExporter] = useState(null);
   const [selectedBid, setSelectedBid] = useState(null);
   const [listingToDelete, setListingToDelete] = useState(null);
@@ -264,6 +267,23 @@ export default function FarmerDashboard() {
   };
   const suggestedPrice = getSuggestedPrice(newListing.crop);
 
+  const myInventory = (inventory || []).filter(i => i.farmerId === currentUser?.id);
+  
+  const handleCreateInventory = (e) => {
+    e.preventDefault();
+    if (!newInventory.crop || !newInventory.quantity) return;
+    addInventory({
+      id: `INV${Math.random().toString(36).substr(2, 6)}`,
+      farmerId: currentUser.id,
+      crop: newInventory.crop,
+      grade: newInventory.grade,
+      quantity: Number(newInventory.quantity),
+      harvestDate: newInventory.harvestDate || new Date().toISOString().split('T')[0]
+    });
+    setNewInventory({ crop: '', grade: 'Grade A', quantity: '', harvestDate: '' });
+    setIsInventoryModalOpen(false);
+  };
+
   const handleCreateListing = (e) => {
     e.preventDefault();
     if (!newListing.crop || !newListing.quantity || !newListing.price) return;
@@ -278,7 +298,7 @@ export default function FarmerDashboard() {
       farmerName: currentUser.name,
       farmerId: currentUser.id
     });
-    setNewListing({ crop: '', quantity: '', price: '', grade: 'Grade A' });
+    setNewListing({ inventoryId: '', crop: '', quantity: '', price: '', grade: 'Grade A' });
     setIsListingModalOpen(false);
   };
 
@@ -314,13 +334,25 @@ export default function FarmerDashboard() {
     updateBidStatus(bidId, 'Rejected');
   };
 
-    const handleSellDirect = (exporter) => {
+      const handleSellDirect = (exporter) => {
     setSelectedExporter(exporter);
     setSellQuantity(exporter.quantity || 100);
+    setSellInventoryId('');
     setIsSellDirectModalOpen(true);
   };
 
   const confirmSellDirect = () => {
+    if (!sellInventoryId) {
+      alert("Please select an inventory batch to pull from.");
+      return;
+    }
+
+    const selectedInv = myInventory.find(i => i.id === sellInventoryId);
+    if (!selectedInv || Number(sellQuantity) > Number(selectedInv.quantity)) {
+      alert(`Insufficient inventory! You only have ${selectedInv ? selectedInv.quantity : 0}kg available in this batch.`);
+      return;
+    }
+
     // Push the transaction to the global context so it shows up for the Buyer
     addBid({
       id: `B00${bids.length + 2}`,
@@ -330,7 +362,8 @@ export default function FarmerDashboard() {
       bidPrice: selectedExporter.price,
       status: 'Action Required (Buyer)',
       farmerName: currentUser.name,
-      farmerId: currentUser.id
+      farmerId: currentUser.id,
+      inventoryId: sellInventoryId
     });
 
     alert(`Successfully sent a counter-bid of ${sellQuantity}kg to ${selectedExporter.name} at ₹${selectedExporter.price}/kg! Waiting for buyer acceptance.`);
@@ -591,7 +624,48 @@ export default function FarmerDashboard() {
         </table>
       </div>
 
-      {/* --- MY ACTIVE LISTINGS SECTION --- */}
+              {/* --- MY FARM WAREHOUSE (INVENTORY) --- */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', marginTop: '2rem' }}>
+          <h2 style={{ color: 'var(--farmer-dark)', margin: 0 }}>My Farm Warehouse (Inventory)</h2>
+          <button className="btn btn-farmer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => setIsInventoryModalOpen(true)}>
+            <Plus size={18} /> Add Harvest
+          </button>
+        </div>
+        <div className="glass-card table-responsive" style={{ padding: '0', marginBottom: '2rem' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                <th style={{ padding: '1rem' }}>Crop</th>
+                <th style={{ padding: '1rem' }}>Grade</th>
+                <th style={{ padding: '1rem' }}>Total Remaining Qty</th>
+                <th style={{ padding: '1rem' }}>Harvest Date</th>
+                <th style={{ padding: '1rem' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {myInventory.map(inv => (
+                <tr key={inv.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <td style={{ padding: '1rem', fontWeight: '500' }}>{inv.crop}</td>
+                  <td style={{ padding: '1rem' }}>{inv.grade}</td>
+                  <td style={{ padding: '1rem', fontWeight: 'bold' }}>{inv.quantity} kg</td>
+                  <td style={{ padding: '1rem' }}>{inv.harvestDate}</td>
+                  <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
+                    <button className="btn btn-farmer" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }} onClick={() => {
+                      setNewListing({ inventoryId: inv.id, crop: inv.crop, grade: inv.grade, quantity: '', price: '' });
+                      setIsListingModalOpen(true);
+                    }}>Post to Market</button>
+                    <button className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', color: '#ef4444' }} onClick={() => removeInventory(inv.id)}>Remove</button>
+                  </td>
+                </tr>
+              ))}
+              {myInventory.length === 0 && (
+                <tr><td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Warehouse is empty. Add your harvested crops here.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* --- MY ACTIVE LISTINGS SECTION --- */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>{t('my_listings')}</h2>
         <button className="btn btn-farmer" onClick={() => setIsListingModalOpen(true)}>
@@ -683,7 +757,66 @@ export default function FarmerDashboard() {
         </table>
       </div>
 
-      {/* --- MODALS --- */}
+              {/* --- MODALS --- */}
+        
+        {/* Add Inventory Modal */}
+        {isInventoryModalOpen && (
+          <div className="modal-overlay" onClick={() => setIsInventoryModalOpen(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h2 style={{ marginBottom: '1.5rem', color: 'var(--farmer-dark)' }}>Add Harvest to Warehouse</h2>
+              <form onSubmit={handleCreateInventory}>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>Crop Name</label>
+                  <select 
+                    value={newInventory.crop} 
+                    onChange={e => setNewInventory({...newInventory, crop: e.target.value})} 
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} 
+                    required
+                  >
+                    <option value="" disabled>Select a crop...</option>
+                    <option value="Tomato">Tomato</option>
+                    <option value="Onion">Onion</option>
+                    <option value="Potato">Potato</option>
+                    <option value="Wheat">Wheat</option>
+                    <option value="Rice">Rice</option>
+                    <option value="Cotton">Cotton</option>
+                    <option value="Maize">Maize</option>
+                  </select>
+                </div>
+                
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>Quality Grade</label>
+                  <select 
+                    value={newInventory.grade} 
+                    onChange={e => setNewInventory({...newInventory, grade: e.target.value})} 
+                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                    required
+                  >
+                    <option value="Grade A">Grade A (Premium Quality)</option>
+                    <option value="Grade B">Grade B (Standard Quality)</option>
+                    <option value="Grade C">Grade C (Processing Quality)</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Total Quantity (kg)</label>
+                    <input type="number" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newInventory.quantity} onChange={e => setNewInventory({...newInventory, quantity: e.target.value})} required />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem' }}>Harvest Date</label>
+                    <input type="date" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }} value={newInventory.harvestDate} onChange={e => setNewInventory({...newInventory, harvestDate: e.target.value})} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn" onClick={() => setIsInventoryModalOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-farmer">Add to Warehouse</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       
       {/* Accept Bid Confirmation Modal */}
       {isAcceptBidModalOpen && selectedBid && (

@@ -7,6 +7,7 @@ export function AppProvider({ children }) {
   // --- STATE ---
   const [farmers, setFarmers] = useState([]);
   const [buyers, setBuyers] = useState([]);
+  const [inventory, setInventory] = useState([]);
   const [listings, setListings] = useState([]);
   const [bids, setBids] = useState([]);
     const [fpoUsers, setFpoUsers] = useState([]);
@@ -34,7 +35,8 @@ export function AppProvider({ children }) {
             supabase.from('buyers').select('*'),
             supabase.from('listings').select('*'),
             supabase.from('bids').select('*'),
-            supabase.from('fpo_users').select('*')
+            supabase.from('fpo_users').select('*'),
+            supabase.from('inventory').select('*')
           ]);
 
           const fErr = results[0].error;
@@ -125,6 +127,17 @@ export function AppProvider({ children }) {
 
   const logout = () => setCurrentUser(null);
 
+  const addInventory = async (newItem) => {
+    setInventory([...inventory, newItem]);
+    await supabase.from('inventory').insert([newItem]);
+    if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
+  };
+
+  const removeInventory = async (id) => {
+    setInventory(inventory.filter(i => i.id !== id));
+    await supabase.from('inventory').delete().eq('id', id);
+  };
+
   const addListing = async (newListing) => {
     setListings([...listings, newListing]); // Optimistic UI
     await supabase.from('listings').insert([newListing]);
@@ -213,12 +226,22 @@ export function AppProvider({ children }) {
         const listing = listings.find(l => l.id === acceptedBid.listingId || (l.crop === acceptedBid.crop && l.farmerName === acceptedBid.farmerName));
         if (listing) {
             if (Number(acceptedBid.quantity) > Number(listing.quantity)) {
-                return { success: false, message: `Insufficient Inventory! The buyer requested ${acceptedBid.quantity}kg but you only have ${listing.quantity}kg remaining.` };
+                return { success: false, message: `Insufficient Listing Quantity! The buyer requested ${acceptedBid.quantity}kg but you only have ${listing.quantity}kg remaining in this listing.` };
             }
             const newQty = Number(listing.quantity) - Number(acceptedBid.quantity);
             const finalStatus = newQty <= 0 ? 'Sold Out' : 'Active';
             setListings(listings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
             await supabase.from('listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
+
+            // Also decrement underlying inventory if linked
+            if (listing.inventoryId) {
+                const invItem = inventory.find(i => i.id === listing.inventoryId);
+                if (invItem) {
+                    const newInvQty = Number(invItem.quantity) - Number(acceptedBid.quantity);
+                    setInventory(inventory.map(i => i.id === listing.inventoryId ? { ...i, quantity: newInvQty } : i));
+                    await supabase.from('inventory').update({ quantity: newInvQty }).eq('id', listing.inventoryId);
+                }
+            }
         }
       }
     }
@@ -236,7 +259,8 @@ export function AppProvider({ children }) {
       buyers, setBuyers,
       currentUser, loginFarmer, loginBuyer, loginFPO, logout,
       listings, addListing, removeListing,
-      bids, addBid, updateBidStatus,
+      inventory, addInventory, removeInventory,
+        bids, addBid, updateBidStatus,
       addBuyerDemand, removeBuyerDemand,
       updateFarmerCrops,
       addFarmer, deleteFarmer, toggleBlockFarmer, addBuyer, deleteBuyer, toggleBlockBuyer
