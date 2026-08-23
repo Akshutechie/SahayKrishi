@@ -260,8 +260,8 @@ export function AppProvider({ children }) {
           }
       }
       
-      // 3. Decrement Buyer's Global Demand
-      const buyerObj = buyers.find(b => b.name === targetBid.buyer);
+      // 3. Decrement Buyer's Global Demand matching the specific crop
+      const buyerObj = buyers.find(b => b.name === targetBid.buyer && b.requiredCrop === targetBid.crop);
       if (buyerObj && buyerObj.quantityRequired) {
           const newDemandQty = Math.max(0, Number(buyerObj.quantityRequired) - Number(targetBid.quantity));
           setBuyers(buyers.map(b => b.id === buyerObj.id ? { ...b, quantityRequired: newDemandQty } : b));

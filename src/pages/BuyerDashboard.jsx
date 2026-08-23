@@ -225,15 +225,18 @@ export default function BuyerDashboard() {
           </thead>
           <tbody>
             {myDemands.map(demand => (
-              <tr key={demand.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '1rem', fontWeight: '500' }}>{demand.requiredCrop}</td>
-                <td style={{ padding: '1rem' }}>{demand.quantityRequired} kg</td>
-                <td style={{ padding: '1rem' }}>₹{demand.targetPrice} / kg</td>
-                <td style={{ padding: '1rem', color: 'var(--buyer-primary)' }}>Active</td>
-              </tr>
-            ))}
-            {myDemands.length === 0 && (
-              <tr><td colSpan="4" style={{ padding: '1rem', textAlign: 'center' }}>You have not posted any demands.</td></tr>
+                <tr key={demand.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <td style={{ padding: '1rem', fontWeight: '500' }}>{demand.requiredCrop}</td>
+                  <td style={{ padding: '1rem' }}>{demand.quantityRequired} kg</td>
+                  <td style={{ padding: '1rem' }}>₹{demand.targetPrice} / kg</td>
+                  <td style={{ padding: '1rem', color: 'var(--buyer-primary)' }}>Active</td>
+                  <td style={{ padding: '1rem' }}>
+                    <button className="btn" style={{ background: '#ef4444', color: 'white', padding: '0.25rem 0.5rem', fontSize: '0.85rem' }} onClick={() => removeBuyerDemand(demand.id)}>Remove</button>
+                  </td>
+                </tr>
+              ))}
+              {myDemands.length === 0 && (
+                <tr><td colSpan="5" style={{ padding: '1rem', textAlign: 'center' }}>You have not posted any demands.</td></tr>
             )}
           </tbody>
         </table>
