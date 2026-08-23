@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Sun, Cloud, CloudRain, CloudLightning, PlusCircle, CheckCircle, XCircle, Trash2, IndianRupee, Package, Award, Volume2, Mic } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Sun, Cloud, CloudRain, CloudLightning, Plus, PlusCircle, CheckCircle, XCircle, Trash2, IndianRupee, Package, Award, Volume2, Mic } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { useLanguage } from '../context/LanguageContext';
 import BrandLogo from '../components/BrandLogo';
