@@ -679,7 +679,6 @@ export default function FarmerDashboard() {
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <th style={{ padding: '1rem' }}>Crop</th>
-                <th style={{ padding: '1rem' }}>Grade</th>
                 <th style={{ padding: '1rem' }}>Total Remaining Qty</th>
                 <th style={{ padding: '1rem' }}>Harvest Date</th>
                 <th style={{ padding: '1rem' }}>Action</th>
