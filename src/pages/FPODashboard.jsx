@@ -21,12 +21,10 @@ export default function FPODashboard() {
   const [showBuyerDirectory, setShowBuyerDirectory] = useState(false);
   
   // Modal State
-  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
-  const [isDemandModalOpen, setIsDemandModalOpen] = useState(false);
+    const [isDemandModalOpen, setIsDemandModalOpen] = useState(false);
   
   // Form State
-  const [newBulk, setNewBulk] = useState({ crop: '', quantity: '', contributors: '', price: '' });
-  const [newDemand, setNewDemand] = useState({ buyerId: '', crop: '', quantity: '', price: '' });
+    const [newDemand, setNewDemand] = useState({ buyerId: '', crop: '', quantity: '', price: '' });
   const [newFarmer, setNewFarmer] = useState({ name: '', location: '', phone: '' });
   const [newBuyer, setNewBuyer] = useState({ name: '', type: 'APEDA Exporter', location: '' });
 
@@ -60,29 +58,7 @@ export default function FPODashboard() {
     });
     setNewBuyer({ name: '', type: 'APEDA Exporter', location: '' });
   };
-  const handleCreateBulkListing = (e) => {
-    e.preventDefault();
-    if (!newBulk.crop || !newBulk.quantity || !newBulk.contributors || !newBulk.price) return;
-    
-    const numFarmers = Math.min(Number(newBulk.contributors), farmers.length);
-    const selectedFarmers = farmers.slice(0, numFarmers).map(f => f.id);
-
-    addBulkListing({
-      id: `BLK00${Math.random().toString(36).substr(2, 6)}`,
-      crop: newBulk.crop,
-      quantity: newBulk.quantity,
-      contributors: numFarmers,
-      contributor_ids: selectedFarmers.join(','),
-      original_quantity: newBulk.quantity,
-      price: newBulk.price,
-      status: 'Awaiting Bids'
-    });
-    
-    setNewBulk({ crop: '', quantity: '', contributors: '', price: '' });
-    setIsBulkModalOpen(false);
-    alert('Bulk listing successfully created and posted to APEDA Exporters!');
-  };
-
+  
   const handleCreateDemand = (e) => {
     e.preventDefault();
     const buyer = buyers.find(b => b.id === newDemand.buyerId);

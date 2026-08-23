@@ -9,8 +9,7 @@ export function AppProvider({ children }) {
   const [buyers, setBuyers] = useState([]);
   const [listings, setListings] = useState([]);
   const [bids, setBids] = useState([]);
-  const [bulkListings, setBulkListings] = useState([]);
-  const [fpoUsers, setFpoUsers] = useState([]);
+    const [fpoUsers, setFpoUsers] = useState([]);
   
   // Current user stays in localStorage to persist login session across reloads
   const [currentUser, setCurrentUser] = useState(() => {
@@ -35,7 +34,6 @@ export function AppProvider({ children }) {
             supabase.from('buyers').select('*'),
             supabase.from('listings').select('*'),
             supabase.from('bids').select('*'),
-            supabase.from('bulk_listings').select('*'),
             supabase.from('fpo_users').select('*')
           ]);
 
@@ -47,11 +45,9 @@ export function AppProvider({ children }) {
 
           setFarmers(results[0].data || []);
           setBuyers(results[1].data || []);
-          
           if (results[2].data) setListings(results[2].data);
           if (results[3].data) setBids(results[3].data);
-          if (results[4].data) setBulkListings(results[4].data);
-          if (results[5].data) setFpoUsers(results[5].data);
+          if (results[4].data) setFpoUsers(results[4].data);
 
       } catch (error) {
         console.error("Supabase Connection Error:", error);
@@ -93,8 +89,8 @@ export function AppProvider({ children }) {
       supabase.removeChannel(listingsSub);
       supabase.removeChannel(bidsSub);
       if (window.globalSyncChannel) supabase.removeChannel(window.globalSyncChannel);
-    };}, []);
-
+    };
+  }, []);
 
   // --- ACTIONS (Optimistic UI + Supabase Writes) ---
   
@@ -209,12 +205,7 @@ export function AppProvider({ children }) {
     await supabase.from('farmers').update({ primaryCrops: cropsString }).eq('id', currentUser.id);
   };
 
-  const addBulkListing = async (newBulk) => {
-    setBulkListings([...bulkListings, newBulk]);
-    await supabase.from('bulk_listings').insert([newBulk]);
-    if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
-  };
-
+  
   const updateBidStatus = async (bidId, newStatus) => {
     setBids(bids.map(bid => bid.id === bidId ? { ...bid, status: newStatus } : bid));
     await supabase.from('bids').update({ status: newStatus }).eq('id', bidId);
@@ -222,28 +213,16 @@ export function AppProvider({ children }) {
     if (newStatus === 'Accepted (Sold)') {
       const acceptedBid = bids.find(b => b.id === bidId);
       if (acceptedBid) {
-        if (acceptedBid.farmerId === 'FPO') {
-            const listing = bulkListings.find(l => l.id === acceptedBid.listingId);
-            if (listing) {
-                const newQty = Number(listing.quantity) - Number(acceptedBid.quantity);
-                const finalStatus = newQty <= 0 ? 'Sold Out' : 'Awaiting Bids';
-                setBulkListings(bulkListings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
-                await supabase.from('bulk_listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
-            }
-        } else {
-            // It's a regular farmer listing
-            const listing = listings.find(l => l.id === acceptedBid.listingId || (l.crop === acceptedBid.crop && l.farmerName === acceptedBid.farmerName));
-            if (listing) {
-                const newQty = Number(listing.quantity) - Number(acceptedBid.quantity);
-                const finalStatus = newQty <= 0 ? 'Sold Out' : 'Active';
-                setListings(listings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
-                await supabase.from('listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
-            }
+        const listing = listings.find(l => l.id === acceptedBid.listingId || (l.crop === acceptedBid.crop && l.farmerName === acceptedBid.farmerName));
+        if (listing) {
+            const newQty = Number(listing.quantity) - Number(acceptedBid.quantity);
+            const finalStatus = newQty <= 0 ? 'Sold Out' : 'Active';
+            setListings(listings.map(l => l.id === listing.id ? { ...l, quantity: newQty, status: finalStatus } : l));
+            await supabase.from('listings').update({ quantity: newQty, status: finalStatus }).eq('id', listing.id);
         }
       }
     }
     
-    // Broadcast this status change!
     if (window.globalSyncChannel) { window.globalSyncChannel.send({ type: 'broadcast', event: 'sync-data', payload: {} }); }
   };
 
@@ -254,7 +233,6 @@ export function AppProvider({ children }) {
       currentUser, loginFarmer, loginBuyer, loginFPO, logout,
       listings, addListing, removeListing,
       bids, addBid, updateBidStatus,
-      bulkListings, addBulkListing,
       addBuyerDemand, removeBuyerDemand,
       updateFarmerCrops,
       addFarmer, deleteFarmer, toggleBlockFarmer, addBuyer, deleteBuyer, toggleBlockBuyer

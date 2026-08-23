@@ -9,7 +9,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 export default function FarmerDashboard() {
   const navigate = useNavigate();
-  const { listings, bids, buyers, bulkListings, addListing, addBid, updateBidStatus, removeBuyerDemand, removeListing, currentUser, logout, updateFarmerCrops } = useAppContext();
+  const { listings, bids, buyers, addListing, addBid, updateBidStatus, removeBuyerDemand, removeListing, currentUser, logout, updateFarmerCrops } = useAppContext();
   const { t, language } = useLanguage();
 
   const speakText = (text) => {

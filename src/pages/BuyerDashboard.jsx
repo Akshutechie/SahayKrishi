@@ -67,15 +67,13 @@ export default function BuyerDashboard() {
     if (!cropName) return null;
     const safeCrop = cropName.toLowerCase();
     const activeListings = listings.filter(l => l.crop.toLowerCase() === safeCrop && l.status === 'Active');
-    const activeBulk = bulkListings.filter(b => b.crop.toLowerCase() === safeCrop && b.status === 'Awaiting Bids');
     
-    const totalQty = activeListings.reduce((sum, l) => sum + (Number(l.quantity) || 0), 0) + 
-                     activeBulk.reduce((sum, b) => sum + (Number(b.quantity) || 0), 0);
+    
+    const totalQty = activeListings.reduce((sum, l) => sum + (Number(l.quantity) || 0), 0);
                      
     if (totalQty === 0) return { qty: 0, avgPrice: 0 };
     
-    const sumPrice = activeListings.reduce((sum, l) => sum + ((Number(l.price) || 0) * (Number(l.quantity) || 0)), 0) + 
-                     activeBulk.reduce((sum, b) => sum + ((Number(b.price) || 0) * (Number(b.quantity) || 0)), 0);
+    const sumPrice = activeListings.reduce((sum, l) => sum + ((Number(l.price) || 0) * (Number(l.quantity) || 0)), 0);
     const avgPrice = Math.round(sumPrice / totalQty);
     
     return { qty: totalQty, avgPrice };
@@ -276,53 +274,7 @@ export default function BuyerDashboard() {
         </table>
       </div>
 
-      {/* --- FPO BULK LISTINGS TABLE --- */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2>{t('fpo_bulk_listings')} (High Volume)</h2>
-      </div>
-
-      <div className="glass-card table-responsive" style={{ padding: '0', marginBottom: '2rem' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-          <thead>
-            <tr style={{ background: '#fce7f3', borderBottom: '1px solid #fbcfe8', color: '#be185d' }}>
-              <th style={{ padding: '1rem' }}>Seller</th>
-              <th style={{ padding: '1rem' }}>Crop & Grade</th>
-              <th style={{ padding: '1rem' }}>Aggregated Quantity</th>
-              <th style={{ padding: '1rem' }}>Asking Price</th>
-              <th style={{ padding: '1rem' }}>Contributing Farmers</th>
-              <th style={{ padding: '1rem' }}>{t('action')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bulkListings.filter(b => b.status !== 'Sold').map((listing) => (
-              <tr key={listing.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '1rem', fontWeight: 'bold', color: '#be185d' }}>FPO Aggregated Lot</td>
-                <td style={{ padding: '1rem', fontWeight: '500' }}>
-                  {listing.crop}
-                  {listing.grade && (
-                    <span style={{ marginLeft: '8px', fontSize: '0.75rem', padding: '2px 8px', background: listing.grade === 'Organic' ? '#dcfce7' : listing.grade === 'Grade A' ? '#fef3c7' : '#f3f4f6', color: listing.grade === 'Organic' ? '#16a34a' : listing.grade === 'Grade A' ? '#d97706' : '#4b5563', borderRadius: '12px', display: 'inline-block' }}>
-                      {listing.grade}
-                    </span>
-                  )}
-                </td>
-                <td style={{ padding: '1rem', fontWeight: 'bold' }}>{listing.quantity} kg</td>
-                <td style={{ padding: '1rem', color: '#16a34a', fontWeight: '600' }}>₹{listing.price} / kg</td>
-                <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{listing.contributors} Farmers</td>
-                <td style={{ padding: '1rem' }}>
-                  <button className="btn" style={{ background: '#be185d', color: 'white', padding: '0.4rem 0.8rem', fontSize: '0.9rem' }} onClick={() => handleOpenBid({ ...listing, farmerName: 'FPO Aggregated Lot', farmerId: 'FPO', price: listing.price || '' })}>
-                    Place Bid
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {bulkListings.length === 0 && (
-              <tr>
-                <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No active bulk listings found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      
 
       {/* --- FARMER DISCOVERY TABLE --- */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
