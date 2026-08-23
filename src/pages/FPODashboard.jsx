@@ -29,7 +29,7 @@ export default function FPODashboard() {
   // Filtered Data
   const activeDemands = buyers.filter(b => b.requiredCrop);
   const completedSales = bids.filter(b => b.status === 'Accepted (Sold)');
-  const pendingBids = bids.filter(b => b.status === 'Pending' || b.status === 'Rejected');
+  const pendingBids = bids.filter(b => b.status === 'Pending' || b.status === 'Rejected' || b.status === 'Action Required (Buyer)');
 
   // --- HANDLERS ---
   const handleAddFarmer = (e) => {
@@ -226,7 +226,7 @@ export default function FPODashboard() {
                     <td style={{ padding: '1rem' }}>{bid.quantity}kg {bid.crop}</td>
                     <td style={{ padding: '1rem', fontWeight: 'bold' }}>₹{bid.bidPrice}/kg</td>
                     <td style={{ padding: '1rem' }}>
-                      {bid.farmerId === 'FPO' && bid.status === 'Pending' ? (
+                      {bid.status === 'Pending' ? (
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button className="btn" style={{ background: '#16a34a', color: 'white', padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={async () => {
                             const res = await updateBidStatus(bid.id, 'Accepted (Sold)');
